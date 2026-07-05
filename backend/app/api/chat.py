@@ -25,6 +25,8 @@ def chat_message(
         user_id=current_user.id,
         message=payload.message,
         conversation_id=payload.conversation_id,
+        twin_id=payload.twin_id,
+        mode=payload.mode,
     )
 
 
@@ -39,4 +41,6 @@ def chat_stream(
         user_id=current_user.id,
         message=payload.message,
         conversation_id=payload.conversation_id,
+        twin_id=payload.twin_id,
+        mode=payload.mode,
     )
