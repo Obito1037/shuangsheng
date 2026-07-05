@@ -2,13 +2,10 @@ from __future__ import annotations
 
 import json
 import logging
-import re
 
-from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ProviderError
-from app.db.models.document_chunk import DocumentChunk
 from app.db.models.learning_twin import LearningTwin
 from app.db.repositories.conversation_repository import ConversationRepository
 from app.db.repositories.learning_twin_repository import LearningTwinRepository
@@ -17,6 +14,7 @@ from app.integrations.registry import ProviderRegistry, create_provider_registry
 from app.schemas.chat import ChatMessageResponse
 from app.schemas.llm import LlmMessage, LlmMessageResult
 from app.services.permission_service import PermissionService
+from app.services.retrieval_service import RetrievalService
 from app.services.usage_service import UsageService
 
 logger = logging.getLogger(__name__)
@@ -33,6 +31,7 @@ class ChatService:
         self.messages = MessageRepository(db)
         self.twins = LearningTwinRepository(db)
         self.permissions = PermissionService(db)
+        self.retrieval = RetrievalService(db, self.registry)
         self.usage = UsageService(db)
 
     def send_message(
@@ -201,22 +200,7 @@ class ChatService:
         )
 
     def _local_context(self, *, user_id: str, question: str, limit: int = 4) -> str:
-        chunks = list(self.db.scalars(select(DocumentChunk).where(DocumentChunk.user_id == user_id).order_by(DocumentChunk.created_at.desc()).limit(80)))
-        if not chunks:
-            return ""
-        query_terms = {item for item in re.split(r"\W+", question.lower()) if len(item) >= 2}
-
-        def score(chunk: DocumentChunk) -> int:
-            text = chunk.text.lower()
-            return sum(1 for term in query_terms if term in text)
-
-        ranked = sorted(chunks, key=score, reverse=True)
-        selected = [chunk for chunk in ranked if score(chunk) > 0][:limit] or ranked[: min(2, len(ranked))]
-        lines: list[str] = []
-        for index, chunk in enumerate(selected, start=1):
-            text = chunk.text.strip().replace("\n", " ")[:700]
-            lines.append(f"[{index}] {chunk.source}：{text}")
-        return "\n".join(lines)
+        return self.retrieval.local_context(user_id=user_id, question=question, limit=limit)
 
     def _fallback_result(self, message: str, *, twin: LearningTwin | None, mode: str) -> LlmMessageResult:
         if mode != "twin" or twin is None:
