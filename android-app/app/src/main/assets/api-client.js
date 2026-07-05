@@ -11,7 +11,7 @@
   }
 
   const client = {
-    baseUrl: isAppAssets ? 'http://8.148.69.255' : 'http://127.0.0.1:8000',
+    baseUrl: window.APP_ENV?.BASE_URL || (isAppAssets ? 'https://api.echolearn.cn' : 'http://127.0.0.1:8000'),
     tokens: readTokens(),
 
     setTokens(tokens) {

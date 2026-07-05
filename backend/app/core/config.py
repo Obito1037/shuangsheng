@@ -11,7 +11,7 @@ BACKEND_ROOT = Path(__file__).resolve().parents[2]
 WORKSPACE_ROOT = BACKEND_ROOT.parent
 DEFAULT_CORS_ALLOW_ORIGINS = (
     "https://appassets.androidplatform.net,"
-    "http://8.148.69.255,http://8.148.69.255:8000,"
+    "https://api.echolearn.cn,"
     "http://localhost,http://localhost:3000,http://localhost:5173,"
     "http://127.0.0.1,http://127.0.0.1:3000,http://127.0.0.1:5173,"
     "http://10.0.2.2,http://10.0.2.2:8000"
@@ -145,7 +145,7 @@ def load_settings(
             raw.update(read_env_file(path))
             break
     if include_os_environ:
-        raw.update({k: v for k, v in os.environ.items() if k.startswith(("VIVO_", "HTTP_", "EMAIL_", "SMTP_"))})
+        raw.update({k: v for k, v in os.environ.items() if k.startswith(("VIVO_", "HTTP_", "EMAIL_", "SMTP_", "DATABASE_", "JWT_", "CORS_", "ACCESS_", "REFRESH_", "LOCAL_STORAGE_", "MAX_UPLOAD_", "ALLOWED_UPLOAD_"))})
     settings = settings_from_mapping(raw)
     if require_credentials:
         settings.require_credentials(capability)
