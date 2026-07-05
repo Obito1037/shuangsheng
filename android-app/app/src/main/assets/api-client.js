@@ -6,6 +6,10 @@
     try { return JSON.parse(localStorage.getItem(TOKEN_KEY) || 'null'); } catch (_) { return null; }
   }
 
+  function currentTwinId() {
+    return window.app?.state?.selectedTwinId || null;
+  }
+
   const client = {
     baseUrl: isAppAssets ? 'http://8.148.69.255' : 'http://127.0.0.1:8000',
     tokens: readTokens(),
@@ -54,14 +58,14 @@
     getUsage() { return this.request('/api/usage/me'); },
     listTwins() { return this.request('/api/twins'); },
     createTwin(payload) { return this.request('/api/twins', { method: 'POST', body: JSON.stringify(payload) }); },
-    listConversations(twinId) { return this.request(`/api/conversations${twinId ? `?twin_id=${encodeURIComponent(twinId)}` : ''}`); },
-    createConversation(title, twinId) { return this.request('/api/conversations', { method: 'POST', body: JSON.stringify({ title: title || '新对话', twin_id: twinId || null }) }); },
+    listConversations(twinId) { const id = twinId || currentTwinId(); return this.request(`/api/conversations${id ? `?twin_id=${encodeURIComponent(id)}` : ''}`); },
+    createConversation(title, twinId) { const id = twinId || currentTwinId(); return this.request('/api/conversations', { method: 'POST', body: JSON.stringify({ title: title || '新对话', twin_id: id || null }) }); },
     getConversation(id) { return this.request(`/api/conversations/${id}`); },
     sendMessage(payload) { return this.request('/api/chat/message', { method: 'POST', body: JSON.stringify(payload) }); },
     uploadFile(file) { const form = new FormData(); form.append('upload', file); return this.request('/api/files/upload', { method: 'POST', body: form }); },
     listFiles() { return this.request('/api/files'); },
-    listDocuments(twinId) { return this.request(`/api/documents${twinId ? `?twin_id=${encodeURIComponent(twinId)}` : ''}`); },
-    parseDocument(fileId, twinId) { return this.request('/api/documents/parse', { method: 'POST', body: JSON.stringify({ file_id: fileId, twin_id: twinId || null }) }); },
+    listDocuments(twinId) { const id = twinId || currentTwinId(); return this.request(`/api/documents${id ? `?twin_id=${encodeURIComponent(id)}` : ''}`); },
+    parseDocument(fileId, twinId) { const id = twinId || currentTwinId(); return this.request('/api/documents/parse', { method: 'POST', body: JSON.stringify({ file_id: fileId, twin_id: id || null }) }); },
     simulateTwin(id) { return this.request(`/api/twins/${id}/simulate`, { method: 'POST', body: '{}' }); },
     getWeakPoints(id) { return this.request(`/api/twins/${id}/weak-points`); },
     getBlackboard(id, topic) { return this.request(`/api/twins/${id}/blackboard`, { method: 'POST', body: JSON.stringify({ topic: topic || null }) }); },
@@ -153,8 +157,8 @@
 
   function install() {
     const api = window.DualShengApiClient;
-    if (!api || !window.app || api.__learningRendererInstalledV4) return false;
-    api.__learningRendererInstalledV4 = true;
+    if (!api || !window.app || api.__learningRendererInstalledV5) return false;
+    api.__learningRendererInstalledV5 = true;
     const rawSend = api.sendMessage.bind(api);
     api.sendMessage = function (payload) { return rawSend({ ...payload, twin_id: payload?.twin_id || window.app?.state?.selectedTwinId || null, mode: payload?.mode || window.app?.state?.aiMode || 'twin' }); };
     const rawNavigate = window.app.navigate.bind(window.app);
