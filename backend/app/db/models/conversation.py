@@ -10,5 +10,5 @@ class Conversation(IdMixin, TimestampMixin, Base):
     __tablename__ = "conversations"
 
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    twin_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("learning_twins.id"), index=True, nullable=True)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
-
