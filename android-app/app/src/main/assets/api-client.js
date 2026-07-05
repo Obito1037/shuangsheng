@@ -54,14 +54,14 @@
     getUsage() { return this.request('/api/usage/me'); },
     listTwins() { return this.request('/api/twins'); },
     createTwin(payload) { return this.request('/api/twins', { method: 'POST', body: JSON.stringify(payload) }); },
-    listConversations() { return this.request('/api/conversations'); },
-    createConversation(title) { return this.request('/api/conversations', { method: 'POST', body: JSON.stringify({ title: title || '新对话' }) }); },
+    listConversations(twinId) { return this.request(`/api/conversations${twinId ? `?twin_id=${encodeURIComponent(twinId)}` : ''}`); },
+    createConversation(title, twinId) { return this.request('/api/conversations', { method: 'POST', body: JSON.stringify({ title: title || '新对话', twin_id: twinId || null }) }); },
     getConversation(id) { return this.request(`/api/conversations/${id}`); },
     sendMessage(payload) { return this.request('/api/chat/message', { method: 'POST', body: JSON.stringify(payload) }); },
     uploadFile(file) { const form = new FormData(); form.append('upload', file); return this.request('/api/files/upload', { method: 'POST', body: form }); },
     listFiles() { return this.request('/api/files'); },
-    listDocuments() { return this.request('/api/documents'); },
-    parseDocument(fileId) { return this.request('/api/documents/parse', { method: 'POST', body: JSON.stringify({ file_id: fileId }) }); },
+    listDocuments(twinId) { return this.request(`/api/documents${twinId ? `?twin_id=${encodeURIComponent(twinId)}` : ''}`); },
+    parseDocument(fileId, twinId) { return this.request('/api/documents/parse', { method: 'POST', body: JSON.stringify({ file_id: fileId, twin_id: twinId || null }) }); },
     simulateTwin(id) { return this.request(`/api/twins/${id}/simulate`, { method: 'POST', body: '{}' }); },
     getWeakPoints(id) { return this.request(`/api/twins/${id}/weak-points`); },
     getBlackboard(id, topic) { return this.request(`/api/twins/${id}/blackboard`, { method: 'POST', body: JSON.stringify({ topic: topic || null }) }); },
@@ -77,10 +77,7 @@
 
   function ensureMathRenderer() {
     if (window.MathJax?.typesetPromise || document.getElementById('dualsheng-mathjax')) return;
-    window.MathJax = {
-      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true },
-      svg: { fontCache: 'global' },
-    };
+    window.MathJax = { tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true }, svg: { fontCache: 'global' } };
     const script = document.createElement('script');
     script.id = 'dualsheng-mathjax';
     script.async = true;
@@ -109,23 +106,8 @@
     const title = kept ? '' : 'line-through decoration-error decoration-2';
     const tag = kept ? '保留' : '淘汰';
     const tagStyle = kept ? 'bg-brand-light-blue text-brand-blue' : 'bg-error/10 text-error';
-    const reason = kept
-      ? '综合收益最高，进入执行路径。'
-      : `淘汰原因：收益 ${escapeHtml(route.score ?? '-')}，负荷 ${escapeHtml(route.cognitive_load || '-')}，遗忘风险 ${escapeHtml(route.forgetting_risk || '-')}。`;
-    return `
-      <div class="app-card p-4 border ${box}">
-        <div class="flex items-start justify-between gap-3 mb-2">
-          <h3 class="font-semibold text-on-surface ${title}">${escapeHtml(route.name || `路线${index + 1}`)} · ${escapeHtml(route.strategy || '')}</h3>
-          <span class="text-xs px-2 py-1 rounded-full shrink-0 ${tagStyle}">${tag}</span>
-        </div>
-        <div class="flex flex-wrap gap-2 text-xs text-on-surface-variant mb-2">
-          <span class="px-2 py-1 rounded-full bg-brand-surface">收益 ${escapeHtml(route.score ?? '-')}</span>
-          <span class="px-2 py-1 rounded-full bg-brand-surface">${escapeHtml(route.duration_minutes ?? '-')} 分钟</span>
-          <span class="px-2 py-1 rounded-full bg-brand-surface">负荷 ${escapeHtml(route.cognitive_load || '-')}</span>
-          <span class="px-2 py-1 rounded-full bg-brand-surface">遗忘 ${escapeHtml(route.forgetting_risk || '-')}</span>
-        </div>
-        <p class="text-xs text-on-surface-variant leading-relaxed">${reason}</p>
-      </div>`;
+    const reason = kept ? '综合收益最高，进入执行路径。' : `淘汰原因：收益 ${escapeHtml(route.score ?? '-')}，负荷 ${escapeHtml(route.cognitive_load || '-')}，遗忘风险 ${escapeHtml(route.forgetting_risk || '-')}。`;
+    return `<div class="app-card p-4 border ${box}"><div class="flex items-start justify-between gap-3 mb-2"><h3 class="font-semibold text-on-surface ${title}">${escapeHtml(route.name || `路线${index + 1}`)} · ${escapeHtml(route.strategy || '')}</h3><span class="text-xs px-2 py-1 rounded-full shrink-0 ${tagStyle}">${tag}</span></div><div class="flex flex-wrap gap-2 text-xs text-on-surface-variant mb-2"><span class="px-2 py-1 rounded-full bg-brand-surface">收益 ${escapeHtml(route.score ?? '-')}</span><span class="px-2 py-1 rounded-full bg-brand-surface">${escapeHtml(route.duration_minutes ?? '-')} 分钟</span><span class="px-2 py-1 rounded-full bg-brand-surface">负荷 ${escapeHtml(route.cognitive_load || '-')}</span><span class="px-2 py-1 rounded-full bg-brand-surface">遗忘 ${escapeHtml(route.forgetting_risk || '-')}</span></div><p class="text-xs text-on-surface-variant leading-relaxed">${reason}</p></div>`;
   }
 
   function renderRouteLoading() {
@@ -141,21 +123,7 @@
     const steps = data.optimal_path || [];
     const evidence = data.evidence || [];
     const outputs = data.outputs || [];
-    root.innerHTML = `
-      <div class="app-card p-5 mb-4 border border-brand-blue/10">
-        <div class="text-xs text-brand-blue font-semibold mb-2">最终推荐路线</div>
-        <h2 class="text-lg font-bold text-on-surface mb-2">${escapeHtml(route.name || '路线 A')} · ${escapeHtml(route.strategy || '生成学习路径')}</h2>
-        <p class="text-sm text-on-surface-variant leading-relaxed">${escapeHtml(route.rationale || '基于当前分身资料和学习行为生成。')}</p>
-      </div>
-      <div class="mb-4">
-        <h3 class="font-semibold text-on-surface mb-3">路径筛选过程</h3>
-        <div class="space-y-3">${(routes.length ? routes : [route]).map((item, index) => routeCard(item, index, route.name)).join('')}</div>
-      </div>
-      <div class="relative border-l-2 border-brand-blue/20 ml-2 space-y-4 pb-6 mb-4">
-        ${steps.map((step) => `<div class="relative pl-6"><div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-brand-blue border-4 border-brand-main-bg shadow-sm"></div><div class="app-card p-4"><div class="text-xs text-brand-blue font-semibold mb-1">第 ${escapeHtml(step.index)} 步 · ${escapeHtml(step.teacher)}</div><h3 class="font-semibold text-on-surface mb-1">${escapeHtml(step.title)}</h3><p class="text-sm text-on-surface-variant mb-2">模式：${escapeHtml(step.mode)}</p><p class="text-xs text-on-surface-variant">验收：${escapeHtml(step.verification)}</p></div></div>`).join('')}
-      </div>
-      <div class="app-card p-4 mb-4"><h3 class="font-semibold text-on-surface mb-3">证据来源</h3><div class="space-y-2">${evidence.map((item) => `<div class="text-sm text-on-surface-variant">• ${escapeHtml(item)}</div>`).join('') || '<div class="text-sm text-on-surface-variant">暂无足够证据，先上传资料或开始对话。</div>'}</div></div>
-      <div class="app-card p-4 mb-safe-bottom"><h3 class="font-semibold text-on-surface mb-3">本次交付</h3><div class="space-y-3">${outputs.map((item) => `<div class="p-3 rounded-2xl bg-brand-surface/70"><div class="flex justify-between gap-3 mb-1"><span class="font-medium text-sm text-on-surface">${escapeHtml(item.title)}</span><span class="text-xs text-brand-blue shrink-0">${escapeHtml(item.status)}</span></div><div class="text-xs text-on-surface-variant">${escapeHtml(item.type)} · ${escapeHtml(item.detail)}</div></div>`).join('') || '<div class="text-sm text-on-surface-variant">暂无交付内容。</div>'}</div></div>`;
+    root.innerHTML = `<div class="app-card p-5 mb-4 border border-brand-blue/10"><div class="text-xs text-brand-blue font-semibold mb-2">最终推荐路线</div><h2 class="text-lg font-bold text-on-surface mb-2">${escapeHtml(route.name || '路线 A')} · ${escapeHtml(route.strategy || '生成学习路径')}</h2><p class="text-sm text-on-surface-variant leading-relaxed">${escapeHtml(route.rationale || '基于当前分身资料和学习行为生成。')}</p></div><div class="mb-4"><h3 class="font-semibold text-on-surface mb-3">路径筛选过程</h3><div class="space-y-3">${(routes.length ? routes : [route]).map((item, index) => routeCard(item, index, route.name)).join('')}</div></div><div class="relative border-l-2 border-brand-blue/20 ml-2 space-y-4 pb-6 mb-4">${steps.map((step) => `<div class="relative pl-6"><div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-brand-blue border-4 border-brand-main-bg shadow-sm"></div><div class="app-card p-4"><div class="text-xs text-brand-blue font-semibold mb-1">第 ${escapeHtml(step.index)} 步 · ${escapeHtml(step.teacher)}</div><h3 class="font-semibold text-on-surface mb-1">${escapeHtml(step.title)}</h3><p class="text-sm text-on-surface-variant mb-2">模式：${escapeHtml(step.mode)}</p><p class="text-xs text-on-surface-variant">验收：${escapeHtml(step.verification)}</p></div></div>`).join('')}</div><div class="app-card p-4 mb-4"><h3 class="font-semibold text-on-surface mb-3">证据来源</h3><div class="space-y-2">${evidence.map((item) => `<div class="text-sm text-on-surface-variant">• ${escapeHtml(item)}</div>`).join('') || '<div class="text-sm text-on-surface-variant">暂无足够证据，先上传资料或开始对话。</div>'}</div></div><div class="app-card p-4 mb-safe-bottom"><h3 class="font-semibold text-on-surface mb-3">本次交付</h3><div class="space-y-3">${outputs.map((item) => `<div class="p-3 rounded-2xl bg-brand-surface/70"><div class="flex justify-between gap-3 mb-1"><span class="font-medium text-sm text-on-surface">${escapeHtml(item.title)}</span><span class="text-xs text-brand-blue shrink-0">${escapeHtml(item.status)}</span></div><div class="text-xs text-on-surface-variant">${escapeHtml(item.type)} · ${escapeHtml(item.detail)}</div></div>`).join('') || '<div class="text-sm text-on-surface-variant">暂无交付内容。</div>'}</div></div>`;
   }
 
   function renderBlackboardLoading() {
@@ -185,8 +153,8 @@
 
   function install() {
     const api = window.DualShengApiClient;
-    if (!api || !window.app || api.__learningRendererInstalledV3) return false;
-    api.__learningRendererInstalledV3 = true;
+    if (!api || !window.app || api.__learningRendererInstalledV4) return false;
+    api.__learningRendererInstalledV4 = true;
     const rawSend = api.sendMessage.bind(api);
     api.sendMessage = function (payload) { return rawSend({ ...payload, twin_id: payload?.twin_id || window.app?.state?.selectedTwinId || null, mode: payload?.mode || window.app?.state?.aiMode || 'twin' }); };
     const rawNavigate = window.app.navigate.bind(window.app);
