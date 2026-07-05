@@ -10,6 +10,7 @@ class Message(IdMixin, TimestampMixin, Base):
     __tablename__ = "messages"
 
     user_id: Mapped[str] = mapped_column(String(36), ForeignKey("users.id"), index=True, nullable=False)
+    twin_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("learning_twins.id"), index=True, nullable=True)
     conversation_id: Mapped[str] = mapped_column(String(36), ForeignKey("conversations.id"), index=True, nullable=False)
     role: Mapped[str] = mapped_column(String(30), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
@@ -18,4 +19,3 @@ class Message(IdMixin, TimestampMixin, Base):
     input_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
     output_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
     total_tokens: Mapped[int | None] = mapped_column(Integer, nullable=True)
-
