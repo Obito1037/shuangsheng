@@ -13,6 +13,7 @@ from app.schemas.auth import (
     LoginRequest,
     LogoutRequest,
     RegisterRequest,
+    ResetPasswordRequest,
 )
 from app.schemas.token import RefreshTokenRequest, TokenPair
 from app.services.auth_service import AuthService
@@ -62,6 +63,14 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
         return AuthService(db).login(payload)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+
+
+@router.post("/reset-password", response_model=AuthResponse)
+def reset_password(payload: ResetPasswordRequest, db: Session = Depends(get_db)) -> AuthResponse:
+    try:
+        return AuthService(db).reset_password(payload)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
 @router.post("/test-login", response_model=AuthResponse)

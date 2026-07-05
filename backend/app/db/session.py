@@ -22,6 +22,9 @@ def init_db() -> None:
     import_models()
     Base.metadata.create_all(bind=engine)
     _ensure_twin_columns()
+    _ensure_m1_columns()
+    _ensure_m3_columns()
+    _ensure_avatar_columns()
 
 
 def _ensure_twin_columns() -> None:
@@ -42,6 +45,53 @@ def _ensure_twin_columns() -> None:
             column_names = {column["name"] for column in inspector.get_columns(table_name)}
             if "twin_id" not in column_names:
                 connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN twin_id VARCHAR(36)"))
+
+
+def _ensure_m1_columns() -> None:
+    if engine.dialect.name != "sqlite":
+        return
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as connection:
+        if "learning_twins" in existing_tables:
+            column_names = {column["name"] for column in inspector.get_columns("learning_twins")}
+            if "level" not in column_names:
+                connection.execute(text("ALTER TABLE learning_twins ADD COLUMN level INTEGER NOT NULL DEFAULT 1"))
+            if "xp" not in column_names:
+                connection.execute(text("ALTER TABLE learning_twins ADD COLUMN xp INTEGER NOT NULL DEFAULT 0"))
+            if "profile_json" not in column_names:
+                connection.execute(text("ALTER TABLE learning_twins ADD COLUMN profile_json TEXT NOT NULL DEFAULT '{}'"))
+        if "learning_records" in existing_tables:
+            column_names = {column["name"] for column in inspector.get_columns("learning_records")}
+            if "payload_json" not in column_names:
+                connection.execute(text("ALTER TABLE learning_records ADD COLUMN payload_json TEXT NOT NULL DEFAULT '{}'"))
+
+
+def _ensure_m3_columns() -> None:
+    if engine.dialect.name != "sqlite":
+        return
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    if "blackboard_lessons" not in existing_tables:
+        return
+    with engine.begin() as connection:
+        column_names = {column["name"] for column in inspector.get_columns("blackboard_lessons")}
+        if "profile_hash" not in column_names:
+            connection.execute(text("ALTER TABLE blackboard_lessons ADD COLUMN profile_hash VARCHAR(64) NOT NULL DEFAULT ''"))
+
+
+def _ensure_avatar_columns() -> None:
+    if engine.dialect.name != "sqlite":
+        return
+    inspector = inspect(engine)
+    existing_tables = set(inspector.get_table_names())
+    with engine.begin() as connection:
+        for table_name in ("users", "learning_twins"):
+            if table_name not in existing_tables:
+                continue
+            column_names = {column["name"] for column in inspector.get_columns(table_name)}
+            if "avatar_data_url" not in column_names:
+                connection.execute(text(f"ALTER TABLE {table_name} ADD COLUMN avatar_data_url TEXT NOT NULL DEFAULT ''"))
 
 
 def get_db() -> Generator[Session]:

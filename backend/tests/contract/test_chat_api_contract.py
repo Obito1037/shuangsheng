@@ -9,3 +9,14 @@ def test_chat_api_contract(client: TestClient, auth_headers: dict[str, str]) -> 
     body = response.json()
     assert {"conversation_id", "answer", "provider", "model"}.issubset(body)
 
+
+def test_chat_stream_api_contract(client: TestClient, auth_headers: dict[str, str]) -> None:
+    response = client.post("/api/chat/stream", json={"message": "hello"}, headers=auth_headers)
+
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/event-stream")
+    body = response.text
+    assert "event: start" in body
+    assert "event: delta" in body
+    assert "event: done" in body
+    assert "fake llm response" in body

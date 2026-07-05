@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
+from collections.abc import Iterator
+from typing import Any
 
 from sqlalchemy.orm import Session
 
@@ -13,7 +15,7 @@ from app.db.repositories.learning_twin_repository import LearningTwinRepository
 from app.db.repositories.message_repository import MessageRepository
 from app.integrations.registry import ProviderRegistry, create_provider_registry
 from app.schemas.chat import ChatMessageResponse
-from app.schemas.llm import LlmMessage, LlmMessageResult
+from app.schemas.llm import LlmMessage, LlmMessageResult, LlmStreamChunk
 from app.services.permission_service import PermissionService
 from app.services.retrieval_service import RetrievalService
 from app.services.usage_service import UsageService
@@ -114,6 +116,138 @@ class ChatService:
     ) -> ChatMessageResponse:
         return self.send_message(user_id=user_id, message=message, conversation_id=conversation_id, twin_id=twin_id, mode=mode)
 
+    def stream_message_events(
+        self,
+        *,
+        user_id: str,
+        message: str,
+        conversation_id: str | None = None,
+        twin_id: str | None = None,
+        mode: str = "twin",
+    ) -> Iterator[dict[str, Any]]:
+        twin = self._load_twin(user_id=user_id, twin_id=twin_id) if mode == "twin" else None
+        effective_twin_id = twin.id if twin else None
+        conversation = self._resolve_conversation(
+            user_id=user_id,
+            conversation_id=conversation_id,
+            title=message[:80] or "New conversation",
+            twin_id=effective_twin_id,
+        )
+        user_message = self.messages.create(
+            user_id=user_id,
+            twin_id=effective_twin_id,
+            conversation_id=conversation.id,
+            role="user",
+            content=message,
+        )
+        yield {
+            "event": "start",
+            "data": {
+                "conversation_id": conversation.id,
+                "user_message_id": user_message.id,
+            },
+        }
+
+        llm_messages = self._conversation_messages(
+            user_id=user_id,
+            conversation_id=conversation.id,
+            question=message,
+            twin=twin,
+            mode=mode,
+        )
+        content_parts: list[str] = []
+        reasoning_parts: list[str] = []
+        final = LlmStreamChunk(provider="", model="", provider_request_id="", done=True)
+        try:
+            provider = self.registry.get_llm_provider()
+            for chunk in self._provider_stream_chunks(provider, llm_messages):
+                final = chunk
+                if chunk.content_delta:
+                    content_parts.append(chunk.content_delta)
+                    yield {"event": "delta", "data": {"delta": chunk.content_delta}}
+                if chunk.reasoning_delta:
+                    reasoning_parts.append(chunk.reasoning_delta)
+                if chunk.done:
+                    break
+            result = LlmMessageResult(
+                content="".join(content_parts),
+                reasoning_content="".join(reasoning_parts) or None,
+                provider=final.provider or "unknown",
+                model=final.model or "unknown-stream",
+                input_tokens=final.input_tokens,
+                output_tokens=final.output_tokens,
+                total_tokens=final.total_tokens,
+                provider_request_id=final.provider_request_id or "unknown-stream",
+            )
+            if not result.content:
+                result = self._fallback_result(message, twin=twin, mode=mode)
+                yield {"event": "delta", "data": {"delta": result.content}}
+        except ProviderError as exc:
+            logger.warning("LLM stream provider failed; using fallback: %s", exc.to_safe_dict())
+            result = self._fallback_result(message, twin=twin, mode=mode)
+            yield {"event": "delta", "data": {"delta": result.content}}
+        except Exception:
+            logger.exception("Unexpected LLM stream provider failure; using fallback")
+            result = self._fallback_result(message, twin=twin, mode=mode)
+            yield {"event": "delta", "data": {"delta": result.content}}
+
+        assistant_message = self.messages.create(
+            user_id=user_id,
+            twin_id=effective_twin_id,
+            conversation_id=conversation.id,
+            role="assistant",
+            content=result.content,
+            provider=result.provider,
+            model=result.model,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            total_tokens=result.total_tokens,
+        )
+        self.usage.record(
+            user_id=user_id,
+            capability="twin_rag_chat" if twin else "normal_chat",
+            provider=result.provider,
+            model=result.model,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            total_tokens=result.total_tokens,
+        )
+        yield {
+            "event": "done",
+            "data": {
+                "conversation_id": conversation.id,
+                "user_message_id": user_message.id,
+                "assistant_message_id": assistant_message.id,
+                "answer": result.content,
+                "provider": result.provider,
+                "model": result.model,
+            },
+        }
+
+    def _provider_stream_chunks(self, provider: Any, messages: list[LlmMessage]) -> Iterator[LlmStreamChunk]:
+        chunk_stream = getattr(provider, "stream_chat_chunks", None)
+        if callable(chunk_stream):
+            yield from chunk_stream(messages)
+            return
+        result = provider.stream_chat(messages)
+        if result.content:
+            yield LlmStreamChunk(
+                content_delta=result.content,
+                reasoning_delta=result.reasoning_content or "",
+                provider=result.provider,
+                model=result.model,
+                provider_request_id=result.provider_request_id,
+            )
+        yield LlmStreamChunk(
+            provider=result.provider,
+            model=result.model,
+            input_tokens=result.input_tokens,
+            output_tokens=result.output_tokens,
+            total_tokens=result.total_tokens,
+            provider_request_id=result.provider_request_id,
+            done=True,
+        )
+
     def _resolve_conversation(self, *, user_id: str, conversation_id: str | None, title: str, twin_id: str | None) -> Conversation:
         if not conversation_id:
             return self.conversations.create(user_id=user_id, title=title, twin_id=twin_id)
@@ -125,7 +259,19 @@ class ChatService:
 
     def _load_twin(self, *, user_id: str, twin_id: str | None) -> LearningTwin | None:
         if not twin_id:
-            return None
+            existing = self.twins.list(user_id)
+            if existing:
+                return existing[0]
+            return self.twins.create(
+                user_id=user_id,
+                name="学习分身",
+                subject="综合学习",
+                goal="持续同步资料、对话和学习行为，生成下一步学习路径",
+                stage="待训练",
+                status="待训练 · 上传资料或开始对话",
+                sync_percent=0,
+                memories_json="[]",
+            )
         return self.twins.get(user_id=user_id, twin_id=twin_id)
 
     def _conversation_messages(

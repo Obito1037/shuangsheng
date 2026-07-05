@@ -14,3 +14,4 @@ class LearningRecord(IdMixin, TimestampMixin, Base):
     conversation_id: Mapped[str | None] = mapped_column(String(36), ForeignKey("conversations.id"), nullable=True)
     record_type: Mapped[str] = mapped_column(String(60), nullable=False)
     content: Mapped[str] = mapped_column(Text, nullable=False)
+    payload_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")

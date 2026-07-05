@@ -1,0 +1,122 @@
+/* ============================================================
+   双生 · 设计令牌 (Design Tokens)
+   两套气质：日间「晨雾蓝」 / 夜间与黑板「深空」
+   ============================================================ */
+
+:root {
+  /* ---- 色板 · 晴空蓝 ---- */
+  --bg: #F6FAFC;
+  --bg-deep: #EAF4F8;
+  --surface: rgba(255, 255, 255, 0.66);
+  --surface-2: rgba(235, 247, 252, 0.58);
+  --surface-3: rgba(215, 235, 244, 0.56);
+
+  --ink: #0E1C2A;
+  --ink-2: #46596D;
+  --ink-3: #8697AA;
+  --line: rgba(14, 70, 120, 0.09);
+  --line-strong: rgba(14, 70, 120, 0.16);
+
+  --primary: #0EA5F0;
+  --primary-deep: #078FD6;
+  --primary-ink: #075985;
+  --primary-soft: #E4F5FE;
+  --primary-glow: rgba(14, 165, 240, 0.18);
+  --glass-bg: rgba(255, 255, 255, 0.58);
+  --glass-bg-strong: rgba(255, 255, 255, 0.78);
+  --glass-edge: rgba(255, 255, 255, 0.82);
+  --glass-line: rgba(58, 118, 150, 0.18);
+  --glass-shadow: 0 18px 44px rgba(31, 82, 116, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  --drawer-bg: rgba(255, 255, 255, 0.92);
+  --logo-top: #009AFD;
+  --logo-bottom: #00B2FD;
+  --logo-grad: linear-gradient(180deg, var(--logo-top) 0%, var(--logo-bottom) 100%);
+
+  --mint: #0FA97D;      --mint-soft: #E0F5EE;
+  --amber: #E8930C;     --amber-soft: #FCF1DE;
+  --coral: #E25563;     --coral-soft: #FBE7E9;
+  --violet: #7C6CF0;    --violet-soft: #ECE9FD;
+
+  /* ---- 几何 ---- */
+  --r-xs: 8px;
+  --r-sm: 12px;
+  --r-md: 20px;
+  --r-lg: 28px;
+  --r-full: 999px;
+
+  /* ---- 阴影（只留两档） ---- */
+  --shadow-sm: 0 12px 32px rgba(31, 82, 116, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.68);
+  --shadow-md: 0 22px 54px rgba(31, 82, 116, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.74);
+
+  /* ---- 字体 ---- */
+  --font: "Plus Jakarta Sans", -apple-system, "HarmonyOS Sans SC", "MiSans",
+          "PingFang SC", "Microsoft YaHei UI", "Microsoft YaHei", sans-serif;
+  --fs-xs: 12px;  --fs-sm: 13px;  --fs-md: 15px;
+  --fs-lg: 17px;  --fs-xl: 21px;  --fs-2xl: 26px;  --fs-3xl: 32px;
+
+  /* ---- 动效 ---- */
+  --ease: cubic-bezier(0.2, 0, 0, 1);
+  --t-fast: 160ms;
+  --t-base: 240ms;
+  --t-slow: 320ms;
+
+  /* ---- 布局 ---- */
+  --page-max: 760px;
+  --pad-page: 18px;
+  --header-h: 60px;
+  --app-vh: 1vh;
+  --kb-inset: 0px;
+  --safe-b: env(safe-area-inset-bottom, 0px);
+  --safe-t: env(safe-area-inset-top, 0px);
+}
+
+/* ---- 深空（全局暗色主题） ---- */
+html[data-theme="dark"] {
+  --bg: #10161D;
+  --bg-deep: #0C1117;
+  --surface: rgba(20, 28, 37, 0.80);
+  --surface-2: rgba(28, 37, 48, 0.68);
+  --surface-3: rgba(38, 51, 65, 0.62);
+
+  --ink: #E9F0F7;
+  --ink-2: #A3B4C6;
+  --ink-3: #64788D;
+  --line: rgba(160, 200, 255, 0.09);
+  --line-strong: rgba(160, 200, 255, 0.18);
+
+  --primary: #0EA5F0;
+  --primary-deep: #38BDF8;
+  --primary-ink: #CBE8FF;
+  --primary-soft: rgba(14, 165, 240, 0.16);
+  --primary-glow: rgba(14, 165, 240, 0.14);
+  --glass-bg: rgba(18, 27, 37, 0.72);
+  --glass-bg-strong: rgba(24, 34, 45, 0.86);
+  --glass-edge: rgba(185, 220, 250, 0.14);
+  --glass-line: rgba(156, 196, 232, 0.13);
+  --glass-shadow: 0 14px 34px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(220, 240, 255, 0.08);
+  --drawer-bg: rgba(18, 25, 34, 0.94);
+  --logo-top: #009AFD;
+  --logo-bottom: #00B2FD;
+  --logo-grad: linear-gradient(180deg, var(--logo-top) 0%, var(--logo-bottom) 100%);
+
+  --mint: #3ECFA5;      --mint-soft: rgba(62, 207, 165, 0.14);
+  --amber: #F5B455;     --amber-soft: rgba(245, 180, 85, 0.14);
+  --coral: #F2808C;     --coral-soft: rgba(242, 128, 140, 0.14);
+  --violet: #A79AF5;    --violet-soft: rgba(167, 154, 245, 0.16);
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25), 0 6px 20px rgba(0, 0, 0, 0.30);
+  --shadow-md: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+/* ---- 黑板专属（不随主题切换，恒定深空 + 粉笔色） ---- */
+:root {
+  --board-bg: #131A22;
+  --board-surface: #1A222D;
+  --board-line: rgba(170, 210, 255, 0.10);
+  --chalk: #E8EEF4;
+  --chalk-dim: #9FB0C2;
+  --chalk-blue: #8FD8FF;
+  --chalk-yellow: #FFD98E;
+  --chalk-pink: #FFA3B5;
+  --chalk-mint: #9BEBD1;
+}

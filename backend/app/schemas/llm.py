@@ -24,3 +24,15 @@ class LlmMessageResult:
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
 
+
+@dataclass(slots=True)
+class LlmStreamChunk:
+    content_delta: str = ""
+    reasoning_delta: str = ""
+    provider: str = ""
+    model: str = ""
+    input_tokens: int | None = None
+    output_tokens: int | None = None
+    total_tokens: int | None = None
+    provider_request_id: str = ""
+    done: bool = False

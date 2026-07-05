@@ -2,7 +2,9 @@ from __future__ import annotations
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+from app.schemas.avatar import AVATAR_DATA_URL_MAX_LENGTH, normalize_avatar_data_url
 
 
 class TwinCreateRequest(BaseModel):
@@ -17,6 +19,12 @@ class TwinUpdateRequest(BaseModel):
     subject: str | None = None
     goal: str | None = None
     stage: str | None = None
+    avatar_data_url: str | None = Field(default=None, max_length=AVATAR_DATA_URL_MAX_LENGTH)
+
+    @field_validator("avatar_data_url")
+    @classmethod
+    def clean_avatar_data_url(cls, value: str | None) -> str | None:
+        return normalize_avatar_data_url(value)
 
 
 class SourceStats(BaseModel):
@@ -56,6 +64,9 @@ class LearningTwinRead(BaseModel):
     stage: str
     status: str
     sync_percent: int
+    level: int = 1
+    xp: int = 0
+    avatar_data_url: str = ""
     source_stats: SourceStats
     memories: list[str]
     recent_conversations: list[TwinConversationSummary]
@@ -121,3 +132,7 @@ class BlackboardResponse(BaseModel):
     twin_id: str
     topic: str
     steps: list[BlackboardStepRead]
+    lesson_id: str | None = None
+    source: str = "template-fallback"
+    cached: bool = False
+    evidence_mode: str = "简化模式"

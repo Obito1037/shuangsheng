@@ -4,6 +4,7 @@ import base64
 import json
 import mimetypes
 import uuid
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
@@ -11,7 +12,7 @@ from app.core.config import VivoSettings, load_settings
 from app.core.errors import ProviderError, ProviderErrorType, provider_error
 from app.core.http_client import ProviderHttpClient, join_url
 from app.integrations.llm.base import LlmProvider
-from app.schemas.llm import LlmMessage, LlmMessageResult
+from app.schemas.llm import LlmMessage, LlmMessageResult, LlmStreamChunk
 from app.schemas.vision import ImageUnderstandingResult
 
 
@@ -67,13 +68,32 @@ class VivoLlmProvider(LlmProvider):
             ) from exc
 
     def stream_chat(self, messages: list[LlmMessage], **kwargs: Any) -> LlmMessageResult:
+        content_parts: list[str] = []
+        reasoning_parts: list[str] = []
+        final = LlmStreamChunk(provider=self.provider, model=self.settings.vivo_llm_stream_model, done=True)
+        for item in self.stream_chat_chunks(messages, **kwargs):
+            final = item
+            if item.content_delta:
+                content_parts.append(item.content_delta)
+            if item.reasoning_delta:
+                reasoning_parts.append(item.reasoning_delta)
+        return LlmMessageResult(
+            content="".join(content_parts),
+            reasoning_content="".join(reasoning_parts) or None,
+            provider=final.provider or self.provider,
+            model=final.model,
+            input_tokens=final.input_tokens,
+            output_tokens=final.output_tokens,
+            total_tokens=final.total_tokens,
+            provider_request_id=final.provider_request_id,
+        )
+
+    def stream_chat_chunks(self, messages: list[LlmMessage], **kwargs: Any) -> Iterator[LlmStreamChunk]:
         request_id = str(uuid.uuid4())
         self._validate_messages(messages, request_id)
         self.settings.require_credentials(self.capability)
         kwargs.setdefault("model", self.settings.vivo_llm_stream_model)
         payload = self._chat_payload(messages, stream=True, **kwargs)
-        content_parts: list[str] = []
-        reasoning_parts: list[str] = []
         usage: dict[str, Any] = {}
         try:
             lines = self.http_client.post_stream_json(
@@ -99,19 +119,24 @@ class VivoLlmProvider(LlmProvider):
                 if not choices:
                     continue
                 delta = choices[0].get("delta") or {}
-                if delta.get("content"):
-                    content_parts.append(delta["content"])
-                if delta.get("reasoning_content"):
-                    reasoning_parts.append(delta["reasoning_content"])
-            return LlmMessageResult(
-                content="".join(content_parts),
-                reasoning_content="".join(reasoning_parts) or None,
+                content_delta = delta.get("content") or ""
+                reasoning_delta = delta.get("reasoning_content") or ""
+                if content_delta or reasoning_delta:
+                    yield LlmStreamChunk(
+                        content_delta=content_delta,
+                        reasoning_delta=reasoning_delta,
+                        provider=self.provider,
+                        model=payload["model"],
+                        provider_request_id=request_id,
+                    )
+            yield LlmStreamChunk(
                 provider=self.provider,
                 model=payload["model"],
                 input_tokens=usage.get("prompt_tokens"),
                 output_tokens=usage.get("completion_tokens"),
                 total_tokens=usage.get("total_tokens"),
                 provider_request_id=request_id,
+                done=True,
             )
         except ProviderError:
             raise
@@ -174,6 +199,8 @@ class VivoLlmProvider(LlmProvider):
             "messages": [self._message_to_payload(message) for message in messages],
             "stream": stream,
         }
+        if "enable_thinking" not in kwargs and "thinking" not in kwargs:
+            payload["enable_thinking"] = False
         for key in (
             "temperature",
             "max_tokens",
@@ -245,6 +272,19 @@ class VivoLlmProvider(LlmProvider):
             message = choices[0]["message"]
             usage = data.get("usage") or {}
             content = message.get("content") or ""
+            if not content.strip():
+                raise provider_error(
+                    self.provider,
+                    self.capability,
+                    ProviderErrorType.PARSE_FAILED,
+                    "LLM provider returned empty content.",
+                    request_id=request_id,
+                    raw_error={
+                        "finish_reason": choices[0].get("finish_reason"),
+                        "has_reasoning_content": bool(message.get("reasoning_content")),
+                        "model": model,
+                    },
+                )
             return LlmMessageResult(
                 content=content,
                 reasoning_content=message.get("reasoning_content"),

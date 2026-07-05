@@ -7,7 +7,7 @@ from fastapi import FastAPI, HTTPException
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import auth, chat, conversations, documents, files, health, knowledge, learning, rag, speech, twins, usage, users
+from app.api import attempts, auth, chat, conversations, documents, files, health, knowledge, learning, mistakes, plans, rag, speech, twins, usage, users
 from app.core.api_errors import http_exception_handler, validation_exception_handler, value_error_handler
 from app.core.config import load_settings
 from app.core.middleware import request_logging_middleware
@@ -35,9 +35,12 @@ def create_app() -> FastAPI:
     app.include_router(health.router)
     app.include_router(auth.router)
     app.include_router(users.router)
+    app.include_router(attempts.router)
     app.include_router(chat.router)
     app.include_router(conversations.router)
     app.include_router(learning.router)
+    app.include_router(mistakes.router)
+    app.include_router(plans.router)
     app.include_router(twins.router)
     app.include_router(files.router)
     app.include_router(documents.router)

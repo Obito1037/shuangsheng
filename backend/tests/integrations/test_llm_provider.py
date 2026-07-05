@@ -46,6 +46,20 @@ def test_llm_return_model_fields() -> None:
     assert result.provider_request_id
 
 
+def test_llm_payload_disables_thinking_by_default() -> None:
+    fake_client = FakeHttpClient(json_response={"choices": [{"message": {"content": "hi"}}]})
+    provider = VivoLlmProvider(settings=fake_settings(), http_client=fake_client)
+    provider.chat([LlmMessage(role="user", content="hello")])
+    assert fake_client.calls[0]["payload"]["enable_thinking"] is False
+
+
+def test_llm_payload_respects_explicit_thinking_flag() -> None:
+    fake_client = FakeHttpClient(json_response={"choices": [{"message": {"content": "hi"}}]})
+    provider = VivoLlmProvider(settings=fake_settings(), http_client=fake_client)
+    provider.chat([LlmMessage(role="user", content="hello")], enable_thinking=True)
+    assert fake_client.calls[0]["payload"]["enable_thinking"] is True
+
+
 def test_llm_stream_return_model_fields() -> None:
     fake_client = FakeHttpClient(
         stream_lines=[
@@ -79,6 +93,18 @@ def test_image_understanding_return_model_fields() -> None:
 
 def test_llm_error_mapping_for_bad_response_shape() -> None:
     provider = VivoLlmProvider(settings=fake_settings(), http_client=FakeHttpClient(json_response={"bad": "shape"}))
+    with pytest.raises(ProviderError) as exc:
+        provider.chat([LlmMessage(role="user", content="hello")])
+    assert exc.value.error_type == ProviderErrorType.PARSE_FAILED
+
+
+def test_llm_empty_content_is_not_success() -> None:
+    fake_client = FakeHttpClient(
+        json_response={
+            "choices": [{"finish_reason": "length", "message": {"content": "", "reasoning_content": "thinking"}}],
+        }
+    )
+    provider = VivoLlmProvider(settings=fake_settings(), http_client=fake_client)
     with pytest.raises(ProviderError) as exc:
         provider.chat([LlmMessage(role="user", content="hello")])
     assert exc.value.error_type == ProviderErrorType.PARSE_FAILED

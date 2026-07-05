@@ -12,6 +12,9 @@ from app.integrations.query_rewrite.base import QueryRewriteProvider
 from app.integrations.query_rewrite.vivo_query_rewrite_provider import VivoQueryRewriteProvider
 from app.integrations.similarity.base import SimilarityProvider
 from app.integrations.similarity.vivo_similarity_provider import VivoSimilarityProvider
+from app.integrations.speech.base import SpeechProvider
+from app.integrations.speech.vivo_asr_provider import VivoAsrProvider
+from app.integrations.speech.vivo_tts_provider import VivoTtsProvider
 from app.integrations.vision.base import OcrProvider
 from app.integrations.vision.vivo_ocr_provider import VivoOcrProvider
 
@@ -41,6 +44,14 @@ class ProviderRegistry:
         self._ensure_provider("vivo")
         return VivoQueryRewriteProvider(settings=self.settings)
 
+    def get_asr_provider(self) -> SpeechProvider:
+        self._ensure_provider("vivo")
+        return VivoAsrProvider(settings=self.settings)
+
+    def get_tts_provider(self) -> SpeechProvider:
+        self._ensure_provider("vivo")
+        return VivoTtsProvider()
+
     def get_capabilities(self) -> dict[str, CapabilityMetadata]:
         return build_capability_registry(self.settings)
 
@@ -58,4 +69,3 @@ def create_provider_registry(
 
 
 default_registry = create_provider_registry
-

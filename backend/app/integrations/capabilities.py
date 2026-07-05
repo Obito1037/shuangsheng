@@ -160,6 +160,22 @@ def build_capability_registry(settings: VivoSettings | None = None) -> dict[str,
             live_test_failed=False,
             notes="Live API currently returns code=-3002, mapped to provider_unavailable.",
         ),
+        "realtime_short_asr": CapabilityMetadata(
+            name="realtime_short_asr",
+            provider="vivo",
+            default_model="shortasrinput",
+            supports_streaming=True,
+            supports_image=False,
+            requires_app_id=True,
+            requires_app_key=True,
+            implemented=True,
+            documented_only=False,
+            android_side=False,
+            provider_unavailable=False,
+            live_test_passed=False,
+            live_test_failed=False,
+            notes="WebSocket asr/v2; local backend accepts 16k/16bit/mono wav/pcm files.",
+        ),
         **_documented_only_capabilities(),
     }
 
@@ -167,7 +183,6 @@ def build_capability_registry(settings: VivoSettings | None = None) -> dict[str,
 def _documented_only_capabilities() -> dict[str, CapabilityMetadata]:
     cloud_names = {
         "text_translation": "translation/query/self",
-        "realtime_short_asr": "websocket asr/v2",
         "long_audio_listen": "long audio websocket",
         "long_audio_transcribe": "long audio file transcription",
         "tts": "TTS audio generation",
@@ -233,4 +248,3 @@ def _documented_only_capabilities() -> dict[str, CapabilityMetadata]:
 
 
 CAPABILITY_REGISTRY = build_capability_registry()
-

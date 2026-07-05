@@ -143,7 +143,6 @@ def load_settings(
     for path in paths:
         if path.exists():
             raw.update(read_env_file(path))
-            break
     if include_os_environ:
         raw.update({k: v for k, v in os.environ.items() if k.startswith(("VIVO_", "HTTP_", "EMAIL_", "SMTP_", "DATABASE_", "JWT_", "CORS_", "ACCESS_", "REFRESH_", "LOCAL_STORAGE_", "MAX_UPLOAD_", "ALLOWED_UPLOAD_"))})
     settings = settings_from_mapping(raw)

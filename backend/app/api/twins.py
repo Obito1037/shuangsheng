@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.orm import Session
 
+from app.api.deps import get_provider_registry
 from app.core.security import get_current_user
 from app.db.models.user import User
 from app.db.session import get_db
+from app.integrations.registry import ProviderRegistry
 from app.schemas.twin import (
     BlackboardRequest,
     BlackboardResponse,
@@ -17,7 +19,12 @@ from app.schemas.twin import (
     TwinUpdateRequest,
     WeakPointRead,
 )
+from app.schemas.twin_brain import DiagnoseResponse, QuestionRead, ReviewQueueItemRead, StudyPlanResponse, TwinProfileResponse
 from app.services.twin_service import TwinService
+from app.services.twin_brain.profile_service import TwinProfileService
+from app.services.twin_brain.scheduler_service import ReviewSchedulerService
+from app.services.twin_brain.selector_service import QuestionSelectorService
+from app.services.twin_brain.simulator_service import SimulatorService
 
 router = APIRouter(prefix="/api/twins", tags=["learning twins"])
 
@@ -95,6 +102,70 @@ def sync_twin(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 
 
+@router.get("/{twin_id}/profile", response_model=TwinProfileResponse)
+def twin_profile(
+    twin_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> TwinProfileResponse:
+    try:
+        return TwinProfileService(db).get_profile(user_id=current_user.id, twin_id=twin_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.get("/{twin_id}/questions", response_model=list[QuestionRead])
+def twin_questions(
+    twin_id: str,
+    mode: str = Query(default="practice", pattern="^(practice|diagnostic|explore)$"),
+    limit: int = Query(default=12, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[QuestionRead]:
+    try:
+        return QuestionSelectorService(db).list_questions(user_id=current_user.id, twin_id=twin_id, mode=mode, limit=limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.post("/{twin_id}/diagnose", response_model=DiagnoseResponse)
+def diagnose_twin(
+    twin_id: str,
+    limit: int = Query(default=8, ge=1, le=20),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> DiagnoseResponse:
+    try:
+        return QuestionSelectorService(db).diagnose(user_id=current_user.id, twin_id=twin_id, limit=limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.get("/{twin_id}/review-queue", response_model=list[ReviewQueueItemRead])
+def review_queue(
+    twin_id: str,
+    limit: int = Query(default=12, ge=1, le=50),
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> list[ReviewQueueItemRead]:
+    try:
+        return ReviewSchedulerService(db).review_queue(user_id=current_user.id, twin_id=twin_id, limit=limit)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.post("/{twin_id}/plans", response_model=StudyPlanResponse)
+def create_plan(
+    twin_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> StudyPlanResponse:
+    try:
+        return SimulatorService(db).create_plan(user_id=current_user.id, twin_id=twin_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
 @router.post("/{twin_id}/simulate", response_model=RouteSimulationResponse)
 def simulate_routes(
     twin_id: str,
@@ -149,8 +220,9 @@ def blackboard(
     payload: BlackboardRequest | None = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
+    registry: ProviderRegistry = Depends(get_provider_registry),
 ) -> BlackboardResponse:
     try:
-        return TwinService(db).blackboard(user_id=current_user.id, twin_id=twin_id, topic=payload.topic if payload else None)
+        return TwinService(db, registry=registry).blackboard(user_id=current_user.id, twin_id=twin_id, topic=payload.topic if payload else None)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))

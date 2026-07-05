@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from app.core.security import hash_password, verify_password
 from app.db.models.user import User
 from app.db.repositories.user_repository import UserRepository
-from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest
+from app.schemas.auth import AuthResponse, LoginRequest, RegisterRequest, ResetPasswordRequest
 from app.schemas.user import UserRead
 from app.services.email_code_service import EmailCodeService
 from app.services.token_service import TokenService
@@ -50,6 +50,19 @@ class AuthService:
         if not user:
             raise ValueError("Invalid email or verification code")
         EmailCodeService(self.db).verify_code(email=email, purpose="login", code=code)
+        return AuthResponse(user=UserRead.model_validate(user), tokens=self.tokens.issue_tokens(user.id))
+
+    def reset_password(self, payload: ResetPasswordRequest) -> AuthResponse:
+        user = self.users.get_by_email(payload.email)
+        if not user:
+            raise ValueError("Email is not registered")
+        EmailCodeService(self.db).verify_code(email=str(payload.email), purpose="reset_password", code=payload.email_code)
+        
+        user.password_hash = hash_password(payload.new_password)
+        self.db.add(user)
+        self.db.commit()
+        self.db.refresh(user)
+        
         return AuthResponse(user=UserRead.model_validate(user), tokens=self.tokens.issue_tokens(user.id))
 
     def logout(self, refresh_token: str) -> None:

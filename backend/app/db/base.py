@@ -43,6 +43,7 @@ def import_models() -> None:
         rag_reference,
         rag_run,
         refresh_token,
+        twin_brain,
         usage_record,
         user,
     )

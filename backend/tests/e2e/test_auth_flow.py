@@ -15,6 +15,16 @@ def test_auth_flow_register_login_refresh_logout(client: TestClient) -> None:
     me = client.get("/api/users/me", headers={"Authorization": f"Bearer {access_token}"})
     assert me.status_code == 200
     assert me.json()["email"] == "flow@example.com"
+    assert me.json()["avatar_data_url"] == ""
+
+    updated = client.patch(
+        "/api/users/me",
+        json={"display_name": "Flow Learner", "avatar_data_url": "data:image/png;base64,QUFB"},
+        headers={"Authorization": f"Bearer {access_token}"},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["display_name"] == "Flow Learner"
+    assert updated.json()["avatar_data_url"] == "data:image/png;base64,QUFB"
 
     refreshed = client.post("/api/auth/refresh", json={"refresh_token": refresh_token})
     assert refreshed.status_code == 200

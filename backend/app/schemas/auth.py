@@ -19,7 +19,7 @@ class RegisterRequest(BaseModel):
 
 class EmailCodeRequest(BaseModel):
     email: EmailStr
-    purpose: Literal["register", "login"] = "register"
+    purpose: Literal["register", "login", "reset_password"] = "register"
 
 
 class EmailCodeVerifyRequest(EmailCodeRequest):
@@ -63,3 +63,9 @@ class LogoutRequest(BaseModel):
 class AuthResponse(BaseModel):
     user: UserRead
     tokens: TokenPair
+
+
+class ResetPasswordRequest(BaseModel):
+    email: EmailStr
+    email_code: str
+    new_password: str

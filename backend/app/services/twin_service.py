@@ -15,9 +15,9 @@ from app.db.models.learning_record import LearningRecord
 from app.db.models.learning_twin import LearningTwin
 from app.db.models.message import Message
 from app.db.repositories.learning_twin_repository import LearningTwinRepository
+from app.integrations.registry import ProviderRegistry
 from app.schemas.twin import (
     BlackboardResponse,
-    BlackboardStepRead,
     LearningOutputRead,
     LearningTwinRead,
     RouteOptionRead,
@@ -30,6 +30,7 @@ from app.schemas.twin import (
     WeakPointRead,
     WorkStepRead,
 )
+from app.services.twin_brain.blackboard_service import BlackboardLessonService
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,9 +45,10 @@ class AssetSnapshot:
 
 
 class TwinService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, *, registry: ProviderRegistry | None = None) -> None:
         self.db = db
         self.twins = LearningTwinRepository(db)
+        self.registry = registry
 
     def list_twins(self, user_id: str) -> list[LearningTwinRead]:
         twins = self.twins.list(user_id)
@@ -81,6 +83,8 @@ class TwinService:
             twin.goal = payload.goal.strip() or twin.goal
         if payload.stage is not None:
             twin.stage = payload.stage.strip() or twin.stage
+        if payload.avatar_data_url is not None:
+            twin.avatar_data_url = payload.avatar_data_url
         snapshot = self._asset_snapshot(user_id)
         twin.sync_percent, twin.status = self._training_status(snapshot)
         twin.memories_json = json.dumps(self._memory_candidates(snapshot), ensure_ascii=False)
@@ -175,32 +179,7 @@ class TwinService:
         ]
 
     def blackboard(self, *, user_id: str, twin_id: str, topic: str | None = None) -> BlackboardResponse:
-        twin = self._require_twin(user_id=user_id, twin_id=twin_id)
-        selected_topic = topic or self._topic(twin)
-        steps = [
-            BlackboardStepRead(
-                index=1,
-                title=f"确定 {selected_topic} 的核心问题",
-                explanation="先把题目、资料或目标拆成对象、条件、要求三部分，避免直接套模板。",
-                formula="对象 -> 条件 -> 目标",
-                check_question="这一步真正要求我判断什么？",
-            ),
-            BlackboardStepRead(
-                index=2,
-                title="从资料和历史对话中提取证据",
-                explanation="只使用已上传资料、已解析文本、最近对话和学习事件作为分身判断依据；证据不足时明确提示。",
-                formula="资料证据 + 对话证据 + 学习事件",
-                check_question="当前结论有没有来自真实资料或真实对话？",
-            ),
-            BlackboardStepRead(
-                index=3,
-                title="给出训练动作和验证标准",
-                explanation="把学习建议落到可执行动作：先讲解、再练习、再复述，最后用错题或变式题验证。",
-                formula="讲解 -> 练习 -> 复述 -> 复测",
-                check_question="完成后如何证明我真的掌握了？",
-            ),
-        ]
-        return BlackboardResponse(twin_id=twin.id, topic=selected_topic, steps=steps)
+        return BlackboardLessonService(self.db, registry=self.registry).get_lesson(user_id=user_id, twin_id=twin_id, topic=topic)
 
     def _create_default_twin(self, user_id: str) -> LearningTwin:
         snapshot = self._asset_snapshot(user_id)
@@ -233,6 +212,9 @@ class TwinService:
             stage=twin.stage,
             status=twin.status,
             sync_percent=twin.sync_percent,
+            level=twin.level,
+            xp=twin.xp,
+            avatar_data_url=twin.avatar_data_url,
             source_stats=snapshot.stats,
             memories=self._parse_memories(twin.memories_json),
             recent_conversations=self._recent_conversations(twin.user_id),
@@ -375,7 +357,7 @@ class TwinService:
             + snapshot.message_count // 2
             + snapshot.learning_event_count,
         )
-        route_a_score = min(96, 72 + evidence_bonus)
+        route_a_score = min(96, 80 + evidence_bonus)
         route_b_score = max(60, route_a_score - (8 if snapshot.stats.mistakes else 12))
         route_c_score = max(58, route_a_score - (5 if snapshot.message_count else 15))
         topic = self._topic(twin)
@@ -449,6 +431,9 @@ class TwinService:
             LearningOutputRead(title=f"{topic} 黑板讲解提纲", type="黑板", detail="3 步：问题拆解、证据提取、训练验证", status="可在黑板页查看"),
             LearningOutputRead(title=f"{topic} 练习任务清单", type="练习", detail="2 道变式题或 1 次输出复述，完成后写入学习事件", status="待完成"),
             LearningOutputRead(title=f"{topic} 复盘交付清单", type="复盘", detail="错因、证据、下一次复测时间，不伪造 PDF/Word 文件", status="待复盘"),
+            LearningOutputRead(title=f"{topic} 视频讲解", type="视频", detail="当前未生成视频文件；M4 接入 TTS/视频能力后再开放导出。", status="未生成"),
+            LearningOutputRead(title=f"{topic} PDF 报告", type="PDF", detail="当前未生成 PDF 文件；仅保留交付占位，避免假文件成功。", status="未生成"),
+            LearningOutputRead(title=f"{topic} Word 复盘", type="Word", detail="当前未生成 Word 文件；后续接入文档导出后再开放。", status="未生成"),
         ]
 
     def _topic(self, twin: LearningTwin) -> str:
