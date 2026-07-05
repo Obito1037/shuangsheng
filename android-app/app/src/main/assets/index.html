@@ -1612,9 +1612,21 @@
         }
     }
 
-    function loginSuccess() {
+    async function loginSuccess() {
+        if (window.DualShengApiClient) {
+            try {
+                await window.DualShengApiClient.testLogin();
+            } catch (e) {
+                console.error("Test login failed", e);
+                alert("测试账号登录失败: " + e.message);
+                return;
+            }
+        }
         document.getElementById('login-wrapper').style.display = 'none';
         document.getElementById('screen-main-chat').classList.add('active');
+        if (window.initApp) {
+            window.initApp();
+        }
     }
 </script>
 <script data-purpose="app-logic">

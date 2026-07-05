@@ -38,6 +38,13 @@ class AuthService:
             raise ValueError("Invalid email or password")
         return AuthResponse(user=UserRead.model_validate(user), tokens=self.tokens.issue_tokens(user.id))
 
+    def test_login(self) -> AuthResponse:
+        test_email = "test@echolearn.com"
+        user = self.users.get_by_email(test_email)
+        if not user:
+            user = self.users.create(email=test_email, password_hash=hash_password("123456"), display_name="Test User")
+        return AuthResponse(user=UserRead.model_validate(user), tokens=self.tokens.issue_tokens(user.id))
+
     def login_with_email_code(self, *, email: str, code: str) -> AuthResponse:
         user = self.users.get_by_email(email)
         if not user:

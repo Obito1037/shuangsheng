@@ -64,6 +64,11 @@ def login(payload: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
 
 
+@router.post("/test-login", response_model=AuthResponse)
+def test_login(db: Session = Depends(get_db)) -> AuthResponse:
+    return AuthService(db).test_login()
+
+
 @router.post("/refresh", response_model=TokenPair)
 def refresh(payload: RefreshTokenRequest, db: Session = Depends(get_db)) -> TokenPair:
     try:

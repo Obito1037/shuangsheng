@@ -104,7 +104,7 @@ class MainActivity : ComponentActivity() {
             textZoom = 100
 
             mediaPlaybackRequiresUserGesture = false
-            mixedContentMode = WebSettings.MIXED_CONTENT_NEVER_ALLOW
+            mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
             cacheMode = WebSettings.LOAD_DEFAULT
 
             userAgentString = "$userAgentString DualShengAndroidWebView"
@@ -127,17 +127,7 @@ class MainActivity : ComponentActivity() {
                 val scheme = uri.scheme?.lowercase() ?: return false
 
                 return when (scheme) {
-                    "http", "https" -> {
-                        val host = uri.host ?: ""
-                        if (host == "appassets.androidplatform.net" || host == "api.echolearn.cn" || host == "10.0.2.2" || host == "127.0.0.1") {
-                            false
-                        } else {
-                            try {
-                                startActivity(Intent(Intent.ACTION_VIEW, uri))
-                            } catch (_: Exception) {}
-                            true
-                        }
-                    }
+                    "http", "https" -> false
                     "tel", "mailto" -> {
                         startActivity(Intent(Intent.ACTION_VIEW, uri))
                         true
