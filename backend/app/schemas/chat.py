@@ -1,11 +1,15 @@
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import BaseModel
 
 
 class ChatMessageRequest(BaseModel):
     message: str
     conversation_id: str | None = None
+    twin_id: str | None = None
+    mode: Literal["twin", "normal"] = "twin"
 
 
 class ChatMessageResponse(BaseModel):
@@ -15,4 +19,3 @@ class ChatMessageResponse(BaseModel):
     answer: str
     provider: str
     model: str
-
