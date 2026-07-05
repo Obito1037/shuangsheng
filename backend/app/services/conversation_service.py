@@ -15,11 +15,11 @@ class ConversationService:
         self.messages = MessageRepository(db)
         self.permissions = PermissionService(db)
 
-    def create(self, *, user_id: str, title: str) -> Conversation:
-        return self.conversations.create(user_id=user_id, title=title)
+    def create(self, *, user_id: str, title: str, twin_id: str | None = None) -> Conversation:
+        return self.conversations.create(user_id=user_id, title=title, twin_id=twin_id)
 
-    def list(self, user_id: str) -> list[Conversation]:
-        return self.conversations.list_for_user(user_id)
+    def list(self, user_id: str, twin_id: str | None = None) -> list[Conversation]:
+        return self.conversations.list_for_user(user_id, twin_id=twin_id)
 
     def detail(self, *, user_id: str, conversation_id: str):
         conversation = self.permissions.require_conversation(user_id=user_id, conversation_id=conversation_id)
@@ -29,4 +29,3 @@ class ConversationService:
     def delete(self, *, user_id: str, conversation_id: str) -> None:
         conversation = self.permissions.require_conversation(user_id=user_id, conversation_id=conversation_id)
         self.conversations.delete(conversation)
-
