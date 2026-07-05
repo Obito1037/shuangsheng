@@ -75,6 +75,34 @@
   function selectedTwinId() { return window.app?.state?.selectedTwinId || null; }
   function showNotice(message) { if (window.alert) window.alert(message); else console.warn(message); }
 
+  function ensureMathRenderer() {
+    if (window.MathJax?.typesetPromise || document.getElementById('dualsheng-mathjax')) return;
+    window.MathJax = {
+      tex: { inlineMath: [['$', '$'], ['\\(', '\\)']], displayMath: [['$$', '$$'], ['\\[', '\\]']], processEscapes: true },
+      svg: { fontCache: 'global' },
+    };
+    const script = document.createElement('script');
+    script.id = 'dualsheng-mathjax';
+    script.async = true;
+    script.src = 'https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js';
+    document.head.appendChild(script);
+  }
+
+  function typesetMath(root) {
+    ensureMathRenderer();
+    const attempt = () => window.MathJax?.typesetPromise?.([root]).catch(() => null);
+    setTimeout(attempt, 80);
+    setTimeout(attempt, 500);
+  }
+
+  function formulaBlock(value) {
+    const formula = String(value || '').trim();
+    if (!formula) return '';
+    const hasLatex = /\\|\^|_|\{|\}|\$|=|\+|-|\\frac|\\sum|\\int|\\lim/.test(formula);
+    const body = hasLatex ? `\\[${escapeHtml(formula)}\\]` : escapeHtml(formula);
+    return `<div class="bg-black/20 rounded-xl px-3 py-2 my-2 overflow-x-auto text-white/95 text-base leading-relaxed math-block">${body}</div>`;
+  }
+
   function routeCard(route, index, recommendedName) {
     const kept = index === 0 || route.name === recommendedName;
     const box = kept ? 'border-brand-blue/20 bg-white' : 'border-error/10 bg-white opacity-60';
@@ -141,7 +169,8 @@
     const root = document.querySelector('#screen-blackboard main .max-w-[800px]');
     if (!root || !data) return;
     const steps = data.steps || [];
-    root.innerHTML = `<div class="bg-[#2A3036] rounded-[24px] border border-white/5 shadow-2xl p-5 md:p-8 w-full"><div class="text-white/60 text-sm mb-4">${escapeHtml(data.topic || '黑板讲解')}</div><div class="space-y-4">${steps.map((step) => `<div class="rounded-2xl bg-white/5 p-4 border border-white/5"><div class="text-brand-blue text-sm font-semibold mb-1">步骤 ${escapeHtml(step.index)} · ${escapeHtml(step.title)}</div>${step.formula ? `<div class="font-mono text-white/90 text-base mb-2 overflow-x-auto whitespace-pre-wrap">${escapeHtml(step.formula)}</div>` : ''}<p class="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(step.explanation)}</p>${step.check_question ? `<p class="text-white/50 text-xs mt-2">自检：${escapeHtml(step.check_question)}</p>` : ''}</div>`).join('')}</div></div>`;
+    root.innerHTML = `<div class="bg-[#2A3036] rounded-[24px] border border-white/5 shadow-2xl p-5 md:p-8 w-full"><div class="text-white/60 text-sm mb-4">${escapeHtml(data.topic || '黑板讲解')}</div><div class="space-y-4">${steps.map((step) => `<div class="rounded-2xl bg-white/5 p-4 border border-white/5"><div class="text-brand-blue text-sm font-semibold mb-1">步骤 ${escapeHtml(step.index)} · ${escapeHtml(step.title)}</div>${formulaBlock(step.formula)}<p class="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">${escapeHtml(step.explanation)}</p>${step.check_question ? `<p class="text-white/50 text-xs mt-2">自检：${escapeHtml(step.check_question)}</p>` : ''}</div>`).join('')}</div></div>`;
+    typesetMath(root);
   }
 
   async function refreshLearning(screenId) {
@@ -156,8 +185,8 @@
 
   function install() {
     const api = window.DualShengApiClient;
-    if (!api || !window.app || api.__learningRendererInstalledV2) return false;
-    api.__learningRendererInstalledV2 = true;
+    if (!api || !window.app || api.__learningRendererInstalledV3) return false;
+    api.__learningRendererInstalledV3 = true;
     const rawSend = api.sendMessage.bind(api);
     api.sendMessage = function (payload) { return rawSend({ ...payload, twin_id: payload?.twin_id || window.app?.state?.selectedTwinId || null, mode: payload?.mode || window.app?.state?.aiMode || 'twin' }); };
     const rawNavigate = window.app.navigate.bind(window.app);
