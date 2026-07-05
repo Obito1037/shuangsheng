@@ -2,10 +2,13 @@ from __future__ import annotations
 
 import json
 import logging
+import re
 
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.core.errors import ProviderError
+from app.db.models.document_chunk import DocumentChunk
 from app.db.models.learning_twin import LearningTwin
 from app.db.repositories.conversation_repository import ConversationRepository
 from app.db.repositories.learning_twin_repository import LearningTwinRepository
@@ -48,7 +51,13 @@ class ChatService:
             else self.conversations.create(user_id=user_id, title=message[:80] or "New conversation")
         )
         user_message = self.messages.create(user_id=user_id, conversation_id=conversation.id, role="user", content=message)
-        llm_messages = self._conversation_messages(user_id=user_id, conversation_id=conversation.id, twin=twin, mode=mode)
+        llm_messages = self._conversation_messages(
+            user_id=user_id,
+            conversation_id=conversation.id,
+            question=message,
+            twin=twin,
+            mode=mode,
+        )
         try:
             result = self.registry.get_llm_provider().chat(llm_messages)
         except ProviderError as exc:
@@ -104,7 +113,10 @@ class ChatService:
         user_message = self.messages.create(user_id=user_id, conversation_id=conversation.id, role="user", content=message)
         try:
             result = self.registry.get_llm_provider().stream_chat(
-                [self._system_message(twin=twin, mode=mode), LlmMessage(role="user", content=message)]
+                [
+                    self._system_message(twin=twin, mode=mode, local_context=self._local_context(user_id=user_id, question=message)),
+                    LlmMessage(role="user", content=message),
+                ]
             )
         except ProviderError as exc:
             logger.warning("Streaming LLM provider failed; using learning twin fallback: %s", exc.to_safe_dict())
@@ -142,6 +154,7 @@ class ChatService:
         *,
         user_id: str,
         conversation_id: str,
+        question: str,
         twin: LearningTwin | None,
         mode: str,
     ) -> list[LlmMessage]:
@@ -150,9 +163,12 @@ class ChatService:
             LlmMessage(role=m.role if m.role in {"user", "assistant", "system"} else "user", content=m.content)
             for m in history[-10:]
         ]
-        return [self._system_message(twin=twin, mode=mode), *llm_messages]
+        return [
+            self._system_message(twin=twin, mode=mode, local_context=self._local_context(user_id=user_id, question=question)),
+            *llm_messages,
+        ]
 
-    def _system_message(self, *, twin: LearningTwin | None, mode: str) -> LlmMessage:
+    def _system_message(self, *, twin: LearningTwin | None, mode: str, local_context: str = "") -> LlmMessage:
         if mode != "twin" or twin is None:
             return LlmMessage(
                 role="system",
@@ -163,20 +179,44 @@ class ChatService:
             )
         memories = self._parse_memories(twin.memories_json)
         memory_text = "；".join(memories[:6]) if memories else "暂无稳定长期记忆，只能依据当前对话和用户目标回答"
+        context_rule = (
+            "\n本轮检索到的本地缓存资料片段：\n" + local_context
+            if local_context
+            else "\n本轮没有检索到足够相关的本地资料片段，必须明确说明证据不足。"
+        )
         return LlmMessage(
             role="system",
             content=(
-                "你是双生的 AI 学习分身执行器。必须基于分身画像回答，不能伪造不存在的资料引用或文件产物。\n"
+                "你是双生的 AI 学习分身执行器。必须基于分身画像和本地缓存资料回答，不能伪造不存在的资料引用或文件产物。\n"
                 f"分身名称：{twin.name}\n"
                 f"学习方向：{twin.subject}\n"
                 f"学习目标：{twin.goal}\n"
                 f"当前阶段：{twin.stage}\n"
                 f"训练状态：{twin.status}（{twin.sync_percent}%）\n"
-                f"记忆候选：{memory_text}\n\n"
-                "回答结构：1）先判断当前问题属于概念、解题、复习、规划还是资料理解；"
-                "2）给出直接帮助；3）给出下一步训练动作；4）需要时建议生成学习路径或黑板讲解。"
+                f"记忆候选：{memory_text}\n"
+                f"{context_rule}\n\n"
+                "回答结构：1）先判断问题类型；2）若有资料片段，引用片段编号回答；"
+                "3）给出下一步训练动作；4）需要时建议生成学习路径或黑板讲解。"
             ),
         )
+
+    def _local_context(self, *, user_id: str, question: str, limit: int = 4) -> str:
+        chunks = list(self.db.scalars(select(DocumentChunk).where(DocumentChunk.user_id == user_id).order_by(DocumentChunk.created_at.desc()).limit(80)))
+        if not chunks:
+            return ""
+        query_terms = {item for item in re.split(r"\W+", question.lower()) if len(item) >= 2}
+
+        def score(chunk: DocumentChunk) -> int:
+            text = chunk.text.lower()
+            return sum(1 for term in query_terms if term in text)
+
+        ranked = sorted(chunks, key=score, reverse=True)
+        selected = [chunk for chunk in ranked if score(chunk) > 0][:limit] or ranked[: min(2, len(ranked))]
+        lines: list[str] = []
+        for index, chunk in enumerate(selected, start=1):
+            text = chunk.text.strip().replace("\n", " ")[:700]
+            lines.append(f"[{index}] {chunk.source}：{text}")
+        return "\n".join(lines)
 
     def _fallback_result(self, message: str, *, twin: LearningTwin | None, mode: str) -> LlmMessageResult:
         if mode != "twin" or twin is None:
