@@ -28,7 +28,6 @@
 <div class="card hero-card rise rise-1">
   <div class="hero-top">
     <div class="hero-avatar-wrap">
-      <div class="ring" style="--p:${pct};--ring-w:4px"></div>
       ${twinAvatarHtml(twin, 'hero-avatar')}
     </div>
     <div class="hero-info">
@@ -49,6 +48,7 @@
   function quickHtml() {
     const items = [
       ['library', 'qk-blue', 'cloud_upload', '训练资料', '上传并喂给分身'],
+      ['memory', 'qk-mint', 'hub', '记忆可视化', 'RAG 向量与图谱'],
       ['profile', 'qk-violet', 'analytics', '能力画像', '查看掌握与错因'],
       ['route', 'qk-mint', 'route', '学习路线', '分身筛选最优路径'],
       ['blackboard', 'qk-blue', 'cast_for_education', '黑板讲解', '分步推导讲给你听'],

@@ -19,8 +19,10 @@ from app.schemas.twin import (
     TwinUpdateRequest,
     WeakPointRead,
 )
+from app.schemas.memory_map import MemoryMapResponse
 from app.schemas.twin_brain import DiagnoseResponse, QuestionRead, ReviewQueueItemRead, StudyPlanResponse, TwinProfileResponse
 from app.services.twin_service import TwinService
+from app.services.twin_brain.memory_map_service import MemoryMapService
 from app.services.twin_brain.profile_service import TwinProfileService
 from app.services.twin_brain.scheduler_service import ReviewSchedulerService
 from app.services.twin_brain.selector_service import QuestionSelectorService
@@ -110,6 +112,19 @@ def twin_profile(
 ) -> TwinProfileResponse:
     try:
         return TwinProfileService(db).get_profile(user_id=current_user.id, twin_id=twin_id)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
+
+
+@router.get("/{twin_id}/memory-map", response_model=MemoryMapResponse)
+def twin_memory_map(
+    twin_id: str,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+) -> MemoryMapResponse:
+    """分身记忆可视化：RAG 文本向量的 2D 投影 + 知识点图谱。"""
+    try:
+        return MemoryMapService(db).get_map(user_id=current_user.id, twin_id=twin_id)
     except ValueError as exc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(exc))
 

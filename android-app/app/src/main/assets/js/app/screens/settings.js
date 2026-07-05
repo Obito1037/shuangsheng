@@ -2,7 +2,7 @@
 (function () {
   'use strict';
 
-  const { qs, esc, toast, toastError, openDoc, el, subjectMeta } = window.DSUi;
+  const { qs, esc, toast, toastError, openDoc, el, subjectMeta, confirmDialog } = window.DSUi;
   const store = window.DSStore;
   const api = window.DSApi;
 
@@ -77,8 +77,8 @@
   <div class="section-title rise rise-3"><span class="i">palette</span>外观</div>
   <div class="card set-group rise rise-3">
     <div class="set-row">
-      <span class="i">dark_mode</span>
-      <div class="st-tx"><b>深色模式</b><span>更克制的深空背景，黑板页始终为深色</span></div>
+      <span class="i">${theme === 'dark' ? 'dark_mode' : 'light_mode'}</span>
+      <div class="st-tx"><b>${theme === 'dark' ? '深色模式' : '浅色模式'}</b></div>
       <div class="seg" style="width:132px" id="set-theme-seg">
         <div class="seg-thumb" style="${theme === 'dark' ? 'transform:translateX(100%)' : ''}"></div>
         <button class="${theme === 'light' ? 'on' : ''}" style="height:32px;font-size:12px">浅色</button>
@@ -134,7 +134,13 @@
     if (del) del.addEventListener('click', async () => {
       const twin = store.activeTwin();
       if (!twin) return;
-      if (!window.confirm(`确定删除分身「${twin.name}」吗？`)) return;
+      const ok = await confirmDialog({
+        title: `删除「${twin.name}」？`,
+        message: '分身的画像和路线会被移除，账号下的资料与会话仍会保留。',
+        okText: '删除',
+        icon: 'delete',
+      });
+      if (!ok) return;
       try {
         await api.deleteTwin(twin.id);
         await window.DSApp.refreshTwins();

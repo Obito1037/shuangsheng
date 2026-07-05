@@ -151,6 +151,9 @@ class TwinService:
 
     def weak_points(self, *, user_id: str, twin_id: str) -> list[WeakPointRead]:
         twin = self._require_twin(user_id=user_id, twin_id=twin_id)
+        mastery_based = self._mastery_weak_points(user_id=user_id, twin_id=twin.id)
+        if mastery_based:
+            return mastery_based
         snapshot = self._asset_snapshot(user_id)
         topic = self._topic(twin)
         evidence = self._evidence(snapshot)
@@ -181,6 +184,58 @@ class TwinService:
     def blackboard(self, *, user_id: str, twin_id: str, topic: str | None = None) -> BlackboardResponse:
         return BlackboardLessonService(self.db, registry=self.registry).get_lesson(user_id=user_id, twin_id=twin_id, topic=topic)
 
+    def _mastery_weak_points(self, *, user_id: str, twin_id: str, limit: int = 4) -> list[WeakPointRead]:
+        """掌握度驱动的薄弱点：数字来自 BKT/Elo 状态，仅在有真实做题数据时启用。"""
+        from app.db.models.twin_brain import Attempt, KnowledgePoint, MasteryState
+
+        rows = list(
+            self.db.execute(
+                select(KnowledgePoint, MasteryState)
+                .join(MasteryState, MasteryState.kp_id == KnowledgePoint.id)
+                .where(MasteryState.user_id == user_id, MasteryState.twin_id == twin_id)
+            )
+        )
+        attempted = [(kp, state) for kp, state in rows if state.attempt_count > 0]
+        if not attempted:
+            return []
+        weak = sorted(
+            ((kp, state) for kp, state in attempted if state.p_mastery < 0.65),
+            key=lambda item: item[1].p_mastery,
+        )[:limit]
+        if not weak:
+            return []
+        # 每个 KP 的主错因（来自真实做题记录）
+        error_counts: dict[str, dict[str, int]] = {}
+        for attempt in self.db.scalars(
+            select(Attempt).where(Attempt.user_id == user_id, Attempt.twin_id == twin_id, Attempt.error_type.is_not(None))
+        ):
+            try:
+                kp_ids = json.loads(attempt.kp_ids_json or "[]")
+            except json.JSONDecodeError:
+                continue
+            for kp_id in kp_ids:
+                error_counts.setdefault(kp_id, {})
+                error_counts[kp_id][attempt.error_type] = error_counts[kp_id].get(attempt.error_type, 0) + 1
+        results: list[WeakPointRead] = []
+        for kp, state in weak:
+            severity = "high" if state.p_mastery < 0.45 else ("medium" if state.p_mastery < 0.6 else "low")
+            main_error = ""
+            if kp.id in error_counts and error_counts[kp.id]:
+                top = max(error_counts[kp.id].items(), key=lambda item: item[1])
+                main_error = f"，主错因「{top[0]}」×{top[1]}"
+            evidence = (
+                f"掌握概率 {round(state.p_mastery * 100)}% · 能力分 {round(state.ability_elo)}"
+                f" · 做对 {state.correct_count}/{state.attempt_count}{main_error}"
+            )
+            if severity == "high":
+                action = "先看一次黑板分步讲解，再做 2 道变式题，24 小时后复测。"
+            elif severity == "medium":
+                action = "直接做 2 道变式题探掌握边界，答错立即复盘错因。"
+            else:
+                action = "用自己的话复述一遍核心方法，巩固即可。"
+            results.append(WeakPointRead(topic=kp.name, severity=severity, evidence=evidence, next_action=action))
+        return results
+
     def _create_default_twin(self, user_id: str) -> LearningTwin:
         snapshot = self._asset_snapshot(user_id)
         sync_percent, status = self._training_status(snapshot)
@@ -204,6 +259,7 @@ class TwinService:
 
     def _read(self, twin: LearningTwin) -> LearningTwinRead:
         snapshot = self._asset_snapshot(twin.user_id)
+        self._merge_twin_scoped_stats(twin=twin, snapshot=snapshot)
         return LearningTwinRead(
             id=twin.id,
             name=twin.name,
@@ -223,6 +279,19 @@ class TwinService:
             created_at=twin.created_at,
             updated_at=twin.updated_at,
         )
+
+    def _merge_twin_scoped_stats(self, *, twin: LearningTwin, snapshot: AssetSnapshot) -> None:
+        """文本直传的资料与结构化错题不产生文件对象，按分身维度补齐首页统计。"""
+        from app.db.models.twin_brain import Mistake
+
+        twin_documents = self.db.scalar(
+            select(func.count()).select_from(Document).where(Document.twin_id == twin.id, Document.user_id == twin.user_id)
+        ) or 0
+        twin_mistakes = self.db.scalar(
+            select(func.count()).select_from(Mistake).where(Mistake.twin_id == twin.id, Mistake.user_id == twin.user_id)
+        ) or 0
+        snapshot.stats.notes = max(snapshot.stats.notes, int(twin_documents))
+        snapshot.stats.mistakes = max(snapshot.stats.mistakes, int(twin_mistakes))
 
     def _asset_snapshot(self, user_id: str) -> AssetSnapshot:
         files = list(self.db.scalars(select(FileObject).where(FileObject.user_id == user_id)))

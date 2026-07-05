@@ -193,11 +193,44 @@
     setTimeout(finish, 5000);
   }
 
+  /* ---- 玻璃确认弹窗（替代原生 confirm） ---- */
+  function confirmDialog(options) {
+    const opts = options || {};
+    return new Promise((resolve) => {
+      document.getElementById('ds-dialog-mask')?.remove();
+      const danger = opts.danger !== false;
+      const mask = el(`
+<div class="ds-dialog-mask" id="ds-dialog-mask">
+  <div class="ds-dialog">
+    <div class="dlg-icon" style="background:${danger ? 'var(--coral-soft)' : 'var(--primary-soft)'};color:${danger ? 'var(--coral)' : 'var(--primary)'}">
+      <span class="i" style="font-size:22px">${esc(opts.icon || (danger ? 'delete' : 'help'))}</span>
+    </div>
+    <h3>${esc(opts.title || '确认操作？')}</h3>
+    <p>${esc(opts.message || '')}</p>
+    <div class="dlg-actions">
+      <button class="btn ghost" data-dlg="no">${esc(opts.cancelText || '取消')}</button>
+      <button class="btn ${danger ? 'danger' : 'primary'}" data-dlg="yes" style="${danger ? 'background:var(--coral);color:#fff' : ''}">${esc(opts.okText || '确定')}</button>
+    </div>
+  </div>
+</div>`);
+      const close = (result) => {
+        mask.classList.remove('active');
+        setTimeout(() => mask.remove(), 260);
+        resolve(result);
+      };
+      mask.addEventListener('click', (e) => { if (e.target === mask) close(false); });
+      mask.querySelector('[data-dlg="no"]').addEventListener('click', () => close(false));
+      mask.querySelector('[data-dlg="yes"]').addEventListener('click', () => close(true));
+      document.body.appendChild(mask);
+      requestAnimationFrame(() => mask.classList.add('active'));
+    });
+  }
+
   window.DSUi = {
     qs, qsa, el, esc,
     logoSvg, markSvg, subjectMeta, twinAvatarHtml, userAvatarHtml,
     toast, toastError, friendlyError,
-    setScrim, openDoc, closeDoc,
+    setScrim, openDoc, closeDoc, confirmDialog,
     fmtDate, fmtSize, fileMeta, statusChip,
     typewriter,
   };

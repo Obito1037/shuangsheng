@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import random
 from datetime import UTC, datetime
 from hashlib import sha256
@@ -11,18 +12,23 @@ from sqlalchemy.orm import Session
 from app.db.base import utc_now
 from app.db.models.learning_twin import LearningTwin
 from app.db.models.twin_brain import Attempt, KnowledgePoint, MasteryState, PlanTask, StudyPlan
+from app.integrations.registry import ProviderRegistry, create_provider_registry
+from app.schemas.llm import LlmMessage
 from app.schemas.twin_brain import PlanCandidateRead, PlanTaskRead, PlanTaskUpdateRequest, StudyPlanResponse
 from app.services.twin_brain.mastery_service import BKT_GUESS, BKT_SLIP, BKT_T, MasteryService
 from app.services.twin_brain.scheduler_service import ReviewSchedulerService
 from app.services.twin_brain.selector_service import QuestionSelectorService
 
+logger = logging.getLogger(__name__)
+
 
 class SimulatorService:
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, *, registry: ProviderRegistry | None = None) -> None:
         self.db = db
         self.mastery = MasteryService(db)
         self.selector = QuestionSelectorService(db)
         self.scheduler = ReviewSchedulerService(db)
+        self.registry = registry or create_provider_registry()
 
     def create_plan(self, *, user_id: str, twin_id: str) -> StudyPlanResponse:
         twin = self._require_twin(user_id=user_id, twin_id=twin_id)
@@ -51,7 +57,7 @@ class SimulatorService:
         plan.status = "ready"
         plan.candidates_json = json.dumps([candidate.model_dump() for candidate in candidates], ensure_ascii=False)
         plan.chosen_route_json = json.dumps(chosen_route, ensure_ascii=False)
-        plan.narrative = self._narrative(chosen=chosen, attempts_count=attempts_count)
+        plan.narrative = self._narrative(chosen=chosen, candidates=candidates, twin=twin, attempts_count=attempts_count)
         plan.finished_at = utc_now()
         self.db.add(plan)
         self.db.commit()
@@ -215,10 +221,40 @@ class SimulatorService:
             "mode": "启动方案" if attempts_count < 10 else "真实画像",
         }
 
-    def _narrative(self, *, chosen: PlanCandidateRead, attempts_count: int) -> str:
-        if attempts_count < 10:
-            return "当前为启动方案：分身还缺少足够做题证据，本轮先用诊断题收集真实 attempt，再重新模拟路线。"
-        return f"推荐「{chosen.name}」。数字由 BKT/Elo/FSRS 与 200 次 rollout 计算，LLM 叙事未改写这些分数。{chosen.reason}"
+    def _narrative(self, *, chosen: PlanCandidateRead, candidates: list[PlanCandidateRead], twin: LearningTwin, attempts_count: int) -> str:
+        template = (
+            "当前为启动方案：分身还缺少足够做题证据，本轮先用诊断题收集真实 attempt，再重新模拟路线。"
+            if attempts_count < 10
+            else f"推荐「{chosen.name}」。数字由 BKT/Elo/FSRS 与 200 次 rollout 计算，LLM 叙事未改写这些分数。{chosen.reason}"
+        )
+        # ===================== 调用大模型 (LLM API) =====================
+        # 让大模型把模拟器算出的效用/收益/负荷数字，解释成给用户看的推荐理由。
+        # 数字仍以算法结果为准，LLM 只负责叙事，不允许编造新数字。失败时回退模板。
+        try:
+            payload = {
+                "分身": {"名称": twin.name, "科目": twin.subject, "目标": twin.goal},
+                "已做题数": attempts_count,
+                "推荐路线": {"名称": chosen.name, "策略": chosen.strategy, "效用": chosen.utility, "预期掌握提升": chosen.expected_gain, "认知负荷": chosen.cognitive_load},
+                "淘汰路线": [
+                    {"名称": c.name, "效用": c.utility, "预期掌握提升": c.expected_gain, "认知负荷": c.cognitive_load}
+                    for c in candidates
+                    if c.eliminated
+                ],
+            }
+            system = (
+                "你是学习分身的路线解说员。基于给定的推荐路线与被淘汰路线的数字，"
+                "用 60-110 字中文说明为什么推荐这条、为什么淘汰其它。"
+                "只能引用给定数字，不得编造新数据，不要用 Markdown，直接输出一段话。"
+            )
+            result = self.registry.get_llm_provider().chat(
+                [LlmMessage(role="system", content=system), LlmMessage(role="user", content=json.dumps(payload, ensure_ascii=False))]
+            )
+            text = (result.content or "").strip()
+            if text and len(text) >= 12:
+                return text
+        except Exception as exc:  # noqa: BLE001 - LLM 不可用时回退模板，不影响出方案
+            logger.warning("Plan narrative LLM failed; using template: %s", exc)
+        return template
 
     def _bkt_roll(self, p: float, *, is_correct: bool) -> float:
         if is_correct:

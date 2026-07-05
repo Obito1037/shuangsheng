@@ -10,7 +10,7 @@
   }
 
   const api = {
-    baseUrl: isAppAssets ? 'http://8.148.69.255:8000' : 'http://127.0.0.1:8000',
+    baseUrl: isAppAssets ? 'http://8.148.69.255' : 'http://127.0.0.1:8000',
     tokens: readTokens(),
 
     setTokens(tokens) {
@@ -98,6 +98,7 @@
     getPlan(id) { return this.request(`/api/plans/${id}`); },
     updatePlanTask(planId, taskId, payload) { return this.request(`/api/plans/${planId}/tasks/${taskId}`, { method: 'PATCH', body: JSON.stringify(payload) }); },
     getWeakPoints(id) { return this.request(`/api/twins/${id}/weak-points`); },
+    getMemoryMap(id) { return this.request(`/api/twins/${id}/memory-map`); },
     getBlackboard(id, topic) { return this.request(`/api/twins/${id}/blackboard`, { method: 'POST', body: JSON.stringify({ topic: topic || null }) }); },
     synthesizeSpeech(text, voice) { return this.request('/api/speech/tts', { method: 'POST', body: JSON.stringify({ text, voice: voice || null }) }); },
     submitAttempt(payload) { return this.request('/api/attempts', { method: 'POST', body: JSON.stringify(payload) }); },

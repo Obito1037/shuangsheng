@@ -42,7 +42,10 @@ class AuthService:
         test_email = "test@echolearn.com"
         user = self.users.get_by_email(test_email)
         if not user:
-            user = self.users.create(email=test_email, password_hash=hash_password("123456"), display_name="Test User")
+            user = self.users.create(email=test_email, password_hash=hash_password("123456"), display_name="双生体验官")
+        from app.services.demo_seed_service import DemoSeedService
+
+        DemoSeedService(self.db).ensure_demo_data(user)
         return AuthResponse(user=UserRead.model_validate(user), tokens=self.tokens.issue_tokens(user.id))
 
     def login_with_email_code(self, *, email: str, code: str) -> AuthResponse:

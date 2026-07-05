@@ -78,7 +78,7 @@
     return `
 <div class="auth-wrap hide-scrollbar" style="overflow-y:auto">
   <div class="auth-brand rise rise-1">
-    ${logoSvg(84, false)}
+    ${logoSvg(84, true)}
     <h1 id="auth-title">欢迎回来</h1>
     <p id="auth-subtitle">试错留给分身，时间留给成长</p>
   </div>

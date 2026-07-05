@@ -6,8 +6,8 @@
   const api = window.DSApi;
 
   /* ================= 路由 ================= */
-  const SCREENS = ['auth', 'home', 'chat', 'twin-new', 'library', 'route', 'profile', 'review', 'blackboard', 'mistakes', 'settings'];
-  const TWIN_REQUIRED = new Set(['library', 'route', 'profile', 'review', 'blackboard', 'mistakes']);
+  const SCREENS = ['auth', 'home', 'chat', 'twin-new', 'library', 'route', 'profile', 'review', 'memory', 'blackboard', 'mistakes', 'settings'];
+  const TWIN_REQUIRED = new Set(['library', 'route', 'profile', 'review', 'memory', 'blackboard', 'mistakes']);
   let stack = ['home'];
 
   const router = {
@@ -166,7 +166,7 @@
   }
 
   function invalidateTwinScreens() {
-    ['route', 'profile', 'review', 'blackboard', 'mistakes'].forEach((k) => {
+    ['route', 'profile', 'review', 'memory', 'blackboard', 'mistakes'].forEach((k) => {
       const s = window.DSScreens[k];
       if (s && s.invalidate) s.invalidate();
     });
