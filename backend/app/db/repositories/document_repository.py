@@ -11,8 +11,17 @@ class DocumentRepository:
     def __init__(self, db: Session) -> None:
         self.db = db
 
-    def create(self, *, user_id: str, title: str, raw_text: str, file_id: str | None = None, status: str = "parsed") -> Document:
-        document = Document(user_id=user_id, title=title, raw_text=raw_text, file_id=file_id, status=status)
+    def create(
+        self,
+        *,
+        user_id: str,
+        title: str,
+        raw_text: str,
+        file_id: str | None = None,
+        status: str = "parsed",
+        twin_id: str | None = None,
+    ) -> Document:
+        document = Document(user_id=user_id, twin_id=twin_id, title=title, raw_text=raw_text, file_id=file_id, status=status)
         self.db.add(document)
         self.db.commit()
         self.db.refresh(document)
@@ -24,8 +33,11 @@ class DocumentRepository:
         self.db.refresh(document)
         return document
 
-    def list_for_user(self, user_id: str) -> list[Document]:
-        return list(self.db.scalars(select(Document).where(Document.user_id == user_id).order_by(Document.created_at.desc())))
+    def list_for_user(self, user_id: str, twin_id: str | None = None) -> list[Document]:
+        stmt = select(Document).where(Document.user_id == user_id)
+        if twin_id is not None:
+            stmt = stmt.where(Document.twin_id == twin_id)
+        return list(self.db.scalars(stmt.order_by(Document.created_at.desc())))
 
     def get_for_user(self, *, user_id: str, document_id: str) -> Document | None:
         return self.db.scalar(select(Document).where(Document.id == document_id, Document.user_id == user_id))
@@ -41,11 +53,13 @@ class DocumentRepository:
         chunk_index: int,
         source: str,
         text: str,
+        twin_id: str | None = None,
         knowledge_base_id: str | None = None,
         embedding_json: str | None = None,
     ) -> DocumentChunk:
         chunk = DocumentChunk(
             user_id=user_id,
+            twin_id=twin_id,
             document_id=document_id,
             chunk_index=chunk_index,
             source=source,
@@ -58,10 +72,12 @@ class DocumentRepository:
         self.db.refresh(chunk)
         return chunk
 
-    def list_chunks(self, *, user_id: str, knowledge_base_id: str | None = None) -> list[DocumentChunk]:
+    def list_chunks(self, *, user_id: str, knowledge_base_id: str | None = None, twin_id: str | None = None) -> list[DocumentChunk]:
         stmt = select(DocumentChunk).where(DocumentChunk.user_id == user_id)
         if knowledge_base_id:
             stmt = stmt.where(DocumentChunk.knowledge_base_id == knowledge_base_id)
+        if twin_id is not None:
+            stmt = stmt.where(DocumentChunk.twin_id == twin_id)
         return list(self.db.scalars(stmt.order_by(DocumentChunk.created_at.asc())))
 
     def list_chunks_for_document(self, *, user_id: str, document_id: str) -> list[DocumentChunk]:
