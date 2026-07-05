@@ -38,6 +38,13 @@ class AuthService:
             raise ValueError("Invalid email or password")
         return AuthResponse(user=UserRead.model_validate(user), tokens=self.tokens.issue_tokens(user.id))
 
+    def login_with_email_code(self, *, email: str, code: str) -> AuthResponse:
+        user = self.users.get_by_email(email)
+        if not user:
+            raise ValueError("Invalid email or verification code")
+        EmailCodeService(self.db).verify_code(email=email, purpose="login", code=code)
+        return AuthResponse(user=UserRead.model_validate(user), tokens=self.tokens.issue_tokens(user.id))
+
     def logout(self, refresh_token: str) -> None:
         self.tokens.revoke(refresh_token)
 

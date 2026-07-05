@@ -19,7 +19,7 @@ class RegisterRequest(BaseModel):
 
 class EmailCodeRequest(BaseModel):
     email: EmailStr
-    purpose: Literal["register"] = "register"
+    purpose: Literal["register", "login"] = "register"
 
 
 class EmailCodeVerifyRequest(EmailCodeRequest):

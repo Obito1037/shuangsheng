@@ -8,6 +8,11 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.speech.RecognitionListener
+import android.speech.RecognizerIntent
+import android.speech.SpeechRecognizer
 import android.util.Log
 import android.view.ViewGroup
 import android.view.Window
@@ -19,11 +24,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import androidx.webkit.WebViewAssetLoader
+import org.json.JSONObject
+import java.util.Locale
 
 class MainActivity : ComponentActivity() {
 
     private lateinit var webView: WebView
     private var fileChooserCallback: ValueCallback<Array<Uri>>? = null
+    private var speechRecognizer: SpeechRecognizer? = null
 
     private val fileChooserLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -59,6 +67,7 @@ class MainActivity : ComponentActivity() {
 
         val assetLoader = WebViewAssetLoader.Builder()
             .addPathHandler("/assets/", WebViewAssetLoader.AssetsPathHandler(this))
+            .addPathHandler("/res/", WebViewAssetLoader.ResourcesPathHandler(this))
             .build()
 
         webView = WebView(this)
@@ -100,6 +109,7 @@ class MainActivity : ComponentActivity() {
 
             userAgentString = "$userAgentString DualShengAndroidWebView"
         }
+        webView.addJavascriptInterface(VoiceBridge(), "DualShengAndroid")
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(
@@ -218,6 +228,97 @@ class MainActivity : ComponentActivity() {
         webView.loadUrl("https://appassets.androidplatform.net/assets/index.html")
     }
 
+    inner class VoiceBridge {
+        @JavascriptInterface
+        fun startVoiceInput() {
+            runOnUiThread {
+                if (ContextCompat.checkSelfPermission(
+                        this@MainActivity,
+                        Manifest.permission.RECORD_AUDIO
+                    ) != PackageManager.PERMISSION_GRANTED
+                ) {
+                    ActivityCompat.requestPermissions(
+                        this@MainActivity,
+                        arrayOf(Manifest.permission.RECORD_AUDIO),
+                        2001
+                    )
+                    sendVoiceError("请先允许麦克风权限，然后再试一次。")
+                    return@runOnUiThread
+                }
+                if (!SpeechRecognizer.isRecognitionAvailable(this@MainActivity)) {
+                    sendVoiceError("当前设备不支持语音识别。")
+                    return@runOnUiThread
+                }
+                speechRecognizer?.destroy()
+                speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this@MainActivity).apply {
+                    setRecognitionListener(object : RecognitionListener {
+                        override fun onReadyForSpeech(params: Bundle?) = Unit
+                        override fun onBeginningOfSpeech() = Unit
+                        override fun onRmsChanged(rmsdB: Float) = Unit
+                        override fun onBufferReceived(buffer: ByteArray?) = Unit
+                        override fun onEndOfSpeech() = Unit
+                        override fun onPartialResults(partialResults: Bundle?) {
+                            val text = partialResults
+                                ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                                ?.firstOrNull()
+                            if (!text.isNullOrBlank()) sendVoicePartial(text)
+                        }
+                        override fun onEvent(eventType: Int, params: Bundle?) = Unit
+                        override fun onError(error: Int) {
+                            sendVoiceError("没有听清，请再试一次。")
+                        }
+                        override fun onResults(results: Bundle?) {
+                            val text = results
+                                ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
+                                ?.firstOrNull()
+                            if (text.isNullOrBlank()) {
+                                sendVoiceError("没有识别到语音内容。")
+                            } else {
+                                sendVoiceResult(text)
+                            }
+                        }
+                    })
+                }
+                val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
+                    putExtra(RecognizerIntent.EXTRA_LANGUAGE, Locale.CHINA.toLanguageTag())
+                    putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
+                    putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
+                }
+                speechRecognizer?.startListening(intent)
+            }
+        }
+
+        @JavascriptInterface
+        fun stopVoiceInput() {
+            runOnUiThread {
+                speechRecognizer?.stopListening()
+            }
+        }
+    }
+
+    private fun sendVoiceResult(text: String) {
+        evaluateVoiceCallback("onResult", text)
+    }
+
+    private fun sendVoicePartial(text: String) {
+        evaluateVoiceCallback("onPartial", text)
+    }
+
+    private fun sendVoiceError(message: String) {
+        evaluateVoiceCallback("onError", message)
+    }
+
+    private fun evaluateVoiceCallback(method: String, value: String) {
+        Handler(Looper.getMainLooper()).post {
+            val encoded = JSONObject.quote(value)
+            webView.evaluateJavascript(
+                "window.DualShengVoice && window.DualShengVoice.$method($encoded);",
+                null
+            )
+        }
+    }
+
 
 
     override fun onBackPressed() {
@@ -241,5 +342,11 @@ class MainActivity : ComponentActivity() {
         } else {
             super.onBackPressed()
         }
+    }
+
+    override fun onDestroy() {
+        speechRecognizer?.destroy()
+        speechRecognizer = null
+        super.onDestroy()
     }
 }

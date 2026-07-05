@@ -122,7 +122,7 @@ class EmailCodeService:
 
     @staticmethod
     def _validate_purpose(purpose: str) -> None:
-        if purpose != "register":
+        if purpose not in {"register", "login"}:
             raise ValueError("Unsupported email verification purpose")
 
     @staticmethod

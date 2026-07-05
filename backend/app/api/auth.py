@@ -48,6 +48,14 @@ def verify_email_code(payload: EmailCodeVerifyRequest, db: Session = Depends(get
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc))
 
 
+@router.post("/email/login", response_model=AuthResponse)
+def login_with_email_code(payload: EmailCodeVerifyRequest, db: Session = Depends(get_db)) -> AuthResponse:
+    try:
+        return AuthService(db).login_with_email_code(email=str(payload.email), code=payload.code)
+    except ValueError as exc:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(exc))
+
+
 @router.post("/login", response_model=AuthResponse)
 def login(payload: LoginRequest, db: Session = Depends(get_db)) -> AuthResponse:
     try:

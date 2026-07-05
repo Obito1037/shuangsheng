@@ -65,6 +65,13 @@
       });
     },
 
+    loginWithEmailCode(email, code) {
+      return this.request('/api/auth/email/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, code }),
+      });
+    },
+
     sendEmailCode(email, purpose = 'register') {
       return this.request('/api/auth/email/send-code', {
         method: 'POST',
@@ -110,6 +117,12 @@
       return this.request('/api/twins', { method: 'POST', body: JSON.stringify(payload) });
     },
     listConversations() { return this.request('/api/conversations'); },
+    createConversation(title) {
+      return this.request('/api/conversations', {
+        method: 'POST',
+        body: JSON.stringify({ title: title || '新对话' }),
+      });
+    },
     getConversation(id) { return this.request(`/api/conversations/${id}`); },
     sendMessage(payload) {
       return this.request('/api/chat/message', { method: 'POST', body: JSON.stringify(payload) });
