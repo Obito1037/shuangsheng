@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from collections.abc import Generator
 from pathlib import Path
@@ -12,6 +13,8 @@ from sqlalchemy.orm import Session, sessionmaker
 BACKEND_ROOT = Path(__file__).resolve().parents[1]
 if str(BACKEND_ROOT) not in sys.path:
     sys.path.insert(0, str(BACKEND_ROOT))
+
+os.environ.setdefault("EMAIL_ENABLED", "false")
 
 from app.api.deps import get_provider_registry  # noqa: E402
 from app.db.base import Base, import_models  # noqa: E402

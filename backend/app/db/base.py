@@ -34,6 +34,7 @@ def import_models() -> None:
         device,
         document,
         document_chunk,
+        email_verification,
         file,
         knowledge_base,
         learning_record,

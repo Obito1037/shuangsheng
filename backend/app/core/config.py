@@ -43,6 +43,17 @@ class VivoSettings:
     http_max_retries: int = 2
     http_backoff_seconds: float = 0.25
     cors_allow_origins: str = DEFAULT_CORS_ALLOW_ORIGINS
+    email_enabled: bool = False
+    smtp_host: str | None = None
+    smtp_port: int = 465
+    smtp_use_ssl: bool = True
+    smtp_use_tls: bool = False
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    smtp_from_email: str | None = None
+    smtp_from_name: str = "双生"
+    email_code_expire_minutes: int = 10
+    email_code_length: int = 6
 
     def require_credentials(self, capability: str) -> None:
         missing: list[str] = []
@@ -134,7 +145,7 @@ def load_settings(
             raw.update(read_env_file(path))
             break
     if include_os_environ:
-        raw.update({k: v for k, v in os.environ.items() if k.startswith(("VIVO_", "HTTP_"))})
+        raw.update({k: v for k, v in os.environ.items() if k.startswith(("VIVO_", "HTTP_", "EMAIL_", "SMTP_"))})
     settings = settings_from_mapping(raw)
     if require_credentials:
         settings.require_credentials(capability)
@@ -197,6 +208,17 @@ def settings_from_mapping(raw: Mapping[str, str | None]) -> VivoSettings:
             DEFAULT_CORS_ALLOW_ORIGINS,
         )
         or DEFAULT_CORS_ALLOW_ORIGINS,
+        email_enabled=_parse_bool(get("EMAIL_ENABLED", "false"), default=False),
+        smtp_host=get("SMTP_HOST"),
+        smtp_port=_parse_int(get("SMTP_PORT", "465"), default=465),
+        smtp_use_ssl=_parse_bool(get("SMTP_USE_SSL", "true"), default=True),
+        smtp_use_tls=_parse_bool(get("SMTP_USE_TLS", "false"), default=False),
+        smtp_username=get("SMTP_USERNAME"),
+        smtp_password=get("SMTP_PASSWORD"),
+        smtp_from_email=get("SMTP_FROM_EMAIL", get("SMTP_USERNAME")),
+        smtp_from_name=get("SMTP_FROM_NAME", "双生") or "双生",
+        email_code_expire_minutes=_parse_int(get("EMAIL_CODE_EXPIRE_MINUTES", "10"), default=10),
+        email_code_length=_parse_int(get("EMAIL_CODE_LENGTH", "6"), default=6),
     )
 
 
@@ -212,6 +234,17 @@ def _parse_float(value: str | None, *, default: float) -> float:
         return float(value or default)
     except ValueError:
         return default
+
+
+def _parse_bool(value: str | None, *, default: bool) -> bool:
+    if value is None:
+        return default
+    lowered = value.strip().lower()
+    if lowered in {"1", "true", "yes", "on"}:
+        return True
+    if lowered in {"0", "false", "no", "off"}:
+        return False
+    return default
 
 
 def has_real_vivo_credentials(settings: VivoSettings | None = None) -> bool:

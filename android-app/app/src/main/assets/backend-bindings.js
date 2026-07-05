@@ -19,6 +19,10 @@
     return document.querySelector(selector)?.value?.trim() || '';
   }
 
+  function panelInput(panelSelector, index) {
+    return document.querySelectorAll(`${panelSelector} input`)[index]?.value?.trim() || '';
+  }
+
   function selectedTwin() {
     return appData.twins.find((item) => item.id === app.state.selectedTwinId) || null;
   }
@@ -129,16 +133,39 @@
       window.loginSuccess();
     });
 
+    const registerCodeButton = document.querySelectorAll('#panel-register .m3-input button')[0];
+    registerCodeButton?.addEventListener('click', async (event) => {
+      event.preventDefault();
+      const email = panelInput('#panel-register', 0);
+      if (!email) {
+        window.alert('请输入邮箱。');
+        return;
+      }
+      const originalText = registerCodeButton.textContent;
+      registerCodeButton.disabled = true;
+      registerCodeButton.textContent = '发送中';
+      try {
+        await api.sendEmailCode(email, 'register');
+        window.alert('验证码已发送，请查收邮箱。');
+      } catch (error) {
+        alertError(error);
+      } finally {
+        registerCodeButton.disabled = false;
+        registerCodeButton.textContent = originalText;
+      }
+    });
+
     document.querySelector('#panel-register form')?.addEventListener('submit', async (event) => {
       event.preventDefault();
-      const email = firstInput('#panel-register input[type="text"]');
+      const email = panelInput('#panel-register', 0);
+      const emailCode = panelInput('#panel-register', 1);
       const password = firstInput('#reg-password');
-      if (!email || !password) {
-        window.alert('请输入邮箱和密码。');
+      if (!email || !emailCode || !password) {
+        window.alert('请输入邮箱、验证码和密码。');
         return;
       }
       try {
-        const result = await api.register(email, password, email.split('@')[0]);
+        const result = await api.register(email, password, email.split('@')[0], emailCode);
         api.setTokens(result.tokens);
         await hydrateAppData(result.user);
         originalLoginSuccess();

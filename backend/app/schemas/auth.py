@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, EmailStr, model_validator
 
@@ -13,6 +13,27 @@ class RegisterRequest(BaseModel):
     password: str
     display_name: str | None = None
     phone: str | None = None
+    email_code: str | None = None
+    verified_token: str | None = None
+
+
+class EmailCodeRequest(BaseModel):
+    email: EmailStr
+    purpose: Literal["register"] = "register"
+
+
+class EmailCodeVerifyRequest(EmailCodeRequest):
+    code: str
+
+
+class EmailCodeResponse(BaseModel):
+    ok: bool
+    expires_in_minutes: int
+
+
+class EmailCodeVerifyResponse(BaseModel):
+    ok: bool
+    verified_token: str
 
 
 class LoginRequest(BaseModel):

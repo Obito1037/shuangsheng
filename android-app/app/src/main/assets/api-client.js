@@ -65,10 +65,30 @@
       });
     },
 
-    register(email, password, displayName) {
+    sendEmailCode(email, purpose = 'register') {
+      return this.request('/api/auth/email/send-code', {
+        method: 'POST',
+        body: JSON.stringify({ email, purpose }),
+      });
+    },
+
+    verifyEmailCode(email, code, purpose = 'register') {
+      return this.request('/api/auth/email/verify-code', {
+        method: 'POST',
+        body: JSON.stringify({ email, purpose, code }),
+      });
+    },
+
+    register(email, password, displayName, emailCode, verifiedToken) {
       return this.request('/api/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ email, password, display_name: displayName || null }),
+        body: JSON.stringify({
+          email,
+          password,
+          display_name: displayName || null,
+          email_code: emailCode || null,
+          verified_token: verifiedToken || null,
+        }),
       });
     },
 
