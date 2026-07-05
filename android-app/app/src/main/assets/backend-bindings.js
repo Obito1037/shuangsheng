@@ -11,8 +11,7 @@
   }
 
   function alertError(error) {
-    const message = error?.message || 'Request failed';
-    window.alert(message);
+    showNotice(friendlyError(error), '操作未完成');
   }
 
   function firstInput(selector) {
@@ -25,6 +24,222 @@
 
   function selectedTwin() {
     return appData.twins.find((item) => item.id === app.state.selectedTwinId) || null;
+  }
+
+  const twinRequiredScreens = new Set(['upload-material', 'twin-library', 'learning-route', 'blackboard', 'mistake-review']);
+  let originalEmptyTitleHtml = '';
+  let originalEmptyDescriptionHtml = '';
+  let originalEmptyGridHtml = '';
+
+  function friendlyError(error) {
+    const message = error?.message || String(error || '请求失败');
+    if (/failed to fetch|networkerror|load failed/i.test(message)) {
+      return '暂时无法连接云服务器，请检查网络后重试。';
+    }
+    return message;
+  }
+
+  function installNoticeLayer() {
+    if (document.getElementById('dualsheng-notice-style')) return;
+    const style = document.createElement('style');
+    style.id = 'dualsheng-notice-style';
+    style.textContent = `
+      .dualsheng-notice-mask {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        align-items: flex-end;
+        justify-content: center;
+        padding: 24px 18px max(24px, env(safe-area-inset-bottom));
+        background: rgba(20, 32, 44, 0.18);
+        backdrop-filter: blur(6px);
+      }
+      .dualsheng-notice-card {
+        width: min(100%, 420px);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.98);
+        box-shadow: 0 24px 70px rgba(26, 78, 112, 0.18);
+        border: 1px solid rgba(33, 167, 230, 0.12);
+        padding: 18px;
+      }
+      .dualsheng-notice-icon {
+        width: 40px;
+        height: 40px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #1299df;
+        background: #e8f6ff;
+        flex: none;
+      }
+      .dualsheng-notice-title {
+        font-size: 16px;
+        line-height: 1.35;
+        font-weight: 700;
+        color: #17212b;
+      }
+      .dualsheng-notice-message {
+        margin-top: 4px;
+        font-size: 14px;
+        line-height: 1.6;
+        color: #5b6773;
+      }
+      .dualsheng-notice-button {
+        min-height: 44px;
+        border: 0;
+        border-radius: 999px;
+        padding: 0 18px;
+        background: #14a7e6;
+        color: white;
+        font-size: 14px;
+        font-weight: 700;
+      }
+    `;
+    document.head.appendChild(style);
+  }
+
+  function showNotice(message, title = '提示') {
+    installNoticeLayer();
+    document.getElementById('dualsheng-notice')?.remove();
+    const mask = document.createElement('div');
+    mask.id = 'dualsheng-notice';
+    mask.className = 'dualsheng-notice-mask';
+    mask.innerHTML = `
+      <div class="dualsheng-notice-card">
+        <div class="flex gap-3 items-start">
+          <div class="dualsheng-notice-icon">
+            <span class="material-symbols-rounded text-[22px]">info</span>
+          </div>
+          <div class="flex-1 min-w-0">
+            <div class="dualsheng-notice-title"></div>
+            <div class="dualsheng-notice-message"></div>
+          </div>
+        </div>
+        <div class="flex justify-end mt-5">
+          <button class="dualsheng-notice-button">知道了</button>
+        </div>
+      </div>
+    `;
+    mask.querySelector('.dualsheng-notice-title').textContent = title;
+    mask.querySelector('.dualsheng-notice-message').textContent = message;
+    mask.querySelector('button').addEventListener('click', () => mask.remove());
+    mask.addEventListener('click', (event) => {
+      if (event.target === mask) mask.remove();
+    });
+    document.body.appendChild(mask);
+  }
+
+  function installErrorBoundary() {
+    const originalAlert = window.alert;
+    window.alert = (message) => showNotice(String(message || ''), '提示');
+    window.DualShengNativeAlert = originalAlert;
+    window.addEventListener('error', (event) => {
+      showNotice('页面遇到了一点问题，已为你回到主界面。', '页面已恢复');
+      recoverToMainScreen();
+      console.error(event.error || event.message);
+    });
+    window.addEventListener('unhandledrejection', (event) => {
+      showNotice(friendlyError(event.reason), '操作未完成');
+      recoverToMainScreen();
+      console.error(event.reason);
+    });
+  }
+
+  function recoverToMainScreen() {
+    document.querySelectorAll('.screen').forEach((screen) => {
+      screen.classList.remove('active', 'entering', 'leaving');
+    });
+    document.getElementById('screen-main-chat')?.classList.add('active');
+    app.state.currentScreen = 'main-chat';
+    app.isAnimating = false;
+    app.closeDrawer?.();
+    app.toggleUploadSheet?.(false);
+  }
+
+  function captureMainTemplates() {
+    const heading = document.querySelector('#main-empty-view h2');
+    const description = document.querySelector('#main-empty-view p');
+    const grid = document.querySelector('#main-empty-view .empty-state-grid');
+    originalEmptyTitleHtml = heading?.innerHTML || '';
+    originalEmptyDescriptionHtml = description?.innerHTML || '';
+    originalEmptyGridHtml = grid?.innerHTML || '';
+  }
+
+  function restoreMainTemplates() {
+    const heading = document.querySelector('#main-empty-view h2');
+    const description = document.querySelector('#main-empty-view p');
+    const grid = document.querySelector('#main-empty-view .empty-state-grid');
+    if (heading && originalEmptyTitleHtml && !heading.querySelector('#empty-state-title')) {
+      heading.innerHTML = originalEmptyTitleHtml;
+    }
+    if (description && originalEmptyDescriptionHtml) description.innerHTML = originalEmptyDescriptionHtml;
+    if (grid && originalEmptyGridHtml && grid.dataset.emptyMode === 'true') {
+      grid.innerHTML = originalEmptyGridHtml;
+      delete grid.dataset.emptyMode;
+    }
+  }
+
+  function summaryCard() {
+    return document.querySelector('#screen-main-chat main .app-card.rounded-full');
+  }
+
+  function setComposerState(hasTwin) {
+    const switcher = document.getElementById('ai-mode-switcher');
+    const input = document.getElementById('chat-input');
+    if (switcher) {
+      switcher.classList.toggle('hidden', !hasTwin);
+      const buttons = switcher.querySelectorAll('button');
+      if (buttons[0]) buttons[0].textContent = '学习分身';
+      if (buttons[1]) buttons[1].textContent = '基础模式';
+    }
+    if (input && !hasTwin) input.placeholder = '先创建学习分身，再开始同步学习...';
+    if (input && hasTwin) input.placeholder = '输入你的问题或学习需求...';
+  }
+
+  function renderNoTwinState() {
+    const emptyView = document.getElementById('main-empty-view');
+    const chatView = document.getElementById('main-chat-view');
+    const headerTitle = document.getElementById('main-header-title');
+    const headerIcon = document.getElementById('main-header-icon');
+    const emptyIcon = document.getElementById('empty-state-icon');
+    const chatIcon = document.getElementById('chat-twin-icon');
+    const heading = document.querySelector('#main-empty-view h2');
+    const description = document.querySelector('#main-empty-view p');
+    const grid = document.querySelector('#main-empty-view .empty-state-grid');
+
+    if (headerTitle) headerTitle.textContent = '当前无可用分身';
+    if (headerIcon) headerIcon.textContent = 'school';
+    if (emptyIcon) emptyIcon.textContent = 'school';
+    if (chatIcon) chatIcon.textContent = 'school';
+    if (heading) heading.innerHTML = '当前无可用分身';
+    if (description) description.textContent = '创建学习分身后，就可以上传资料、规划路线和复盘薄弱点。';
+    if (grid) {
+      grid.dataset.emptyMode = 'true';
+      grid.innerHTML = `
+        <button class="app-card p-5 text-left flex flex-col gap-3 btn-press transition-colors-fast hover:border-brand-blue/20 border border-transparent focus:outline-none col-span-2" type="button" data-create-twin-empty>
+          <div class="icon-box bg-blue-50 text-brand-blue mb-1">
+            <span class="material-symbols-rounded text-[24px]">add_circle</span>
+          </div>
+          <div>
+            <h3 class="font-semibold text-[15px] text-on-surface mb-1">创建学习分身</h3>
+            <p class="text-[12px] text-on-surface-variant leading-tight">先建立一个专属分身，再开始训练和同步。</p>
+          </div>
+        </button>
+      `;
+      grid.querySelector('[data-create-twin-empty]')?.addEventListener('click', () => app.navigate('create-twin'));
+    }
+    summaryCard()?.classList.add('hidden');
+    setComposerState(false);
+    emptyView?.classList.add('active');
+    chatView?.classList.remove('active');
+  }
+
+  function renderHasTwinState() {
+    restoreMainTemplates();
+    summaryCard()?.classList.remove('hidden');
+    setComposerState(true);
   }
 
   function mapTwin(twin, index) {
@@ -89,22 +304,10 @@
     const original = app.updateMainView.bind(app);
     app.updateMainView = function () {
       if (!appData.twins.length || !selectedTwin()) {
-        const emptyView = document.getElementById('main-empty-view');
-        const chatView = document.getElementById('main-chat-view');
-        const headerTitle = document.getElementById('main-header-title');
-        const emptyTitle = document.getElementById('empty-state-title');
-        const headerIcon = document.getElementById('main-header-icon');
-        const emptyIcon = document.getElementById('empty-state-icon');
-        const chatIcon = document.getElementById('chat-twin-icon');
-        if (headerTitle) headerTitle.innerText = '暂无学习分身';
-        if (emptyTitle) emptyTitle.innerText = '暂无学习分身';
-        if (headerIcon) headerIcon.innerText = 'school';
-        if (emptyIcon) emptyIcon.innerText = 'school';
-        if (chatIcon) chatIcon.innerText = 'school';
-        emptyView?.classList.add('active');
-        chatView?.classList.remove('active');
+        renderNoTwinState();
         return;
       }
+      renderHasTwinState();
       original();
     };
   }
@@ -183,17 +386,21 @@
       const name = firstInput('#screen-create-twin input') || '学习分身';
       const subject = firstInput('#screen-create-twin select') || '通用学习';
       const goal = firstInput('#screen-create-twin textarea') || '持续学习';
+      const originalText = button.textContent;
+      button.disabled = true;
+      button.textContent = '正在同步';
       try {
-        const twin = await api.createTwin({ name, subject, goal });
-        const mapped = mapTwin(twin, appData.twins.length);
-        appData.twins.unshift(mapped);
-        app.state.selectedTwinId = mapped.id;
-        app.state.selectedConversationId = null;
+        await api.createTwin({ name, subject, goal });
+        await hydrateAppData();
         app.renderSidebar();
         app.updateMainView();
         app.navigate('main-chat');
+        showNotice('学习分身已创建，并已同步到云端。', '创建成功');
       } catch (error) {
         alertError(error);
+      } finally {
+        button.disabled = false;
+        button.textContent = originalText;
       }
     }, true);
   }
@@ -287,13 +494,31 @@
   function patchNavigate() {
     const original = app.navigate.bind(app);
     app.navigate = function (screenId) {
-      original(screenId);
-      setTimeout(() => renderLearning(screenId), 360);
+      try {
+        if (!document.getElementById(`screen-${screenId}`)) {
+          showNotice('这个页面暂时不可用，请稍后再试。', '无法打开页面');
+          recoverToMainScreen();
+          return;
+        }
+        if (twinRequiredScreens.has(screenId) && !selectedTwin()) {
+          showNotice('您尚未创建学习分身，先创建一个再继续。', '需要学习分身');
+          original('create-twin');
+          return;
+        }
+        original(screenId);
+        setTimeout(() => renderLearning(screenId), 360);
+      } catch (error) {
+        console.error(error);
+        showNotice('页面打开失败，已为你回到主界面。', '页面已恢复');
+        recoverToMainScreen();
+      }
     };
   }
 
   ready(async () => {
     ensureAppGlobals();
+    captureMainTemplates();
+    installErrorBoundary();
     patchEmptyState();
     bindAuth();
     bindCreateTwin();
