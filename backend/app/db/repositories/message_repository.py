@@ -17,6 +17,7 @@ class MessageRepository:
         conversation_id: str,
         role: str,
         content: str,
+        twin_id: str | None = None,
         provider: str | None = None,
         model: str | None = None,
         input_tokens: int | None = None,
@@ -25,6 +26,7 @@ class MessageRepository:
     ) -> Message:
         message = Message(
             user_id=user_id,
+            twin_id=twin_id,
             conversation_id=conversation_id,
             role=role,
             content=content,
@@ -47,4 +49,3 @@ class MessageRepository:
                 .order_by(Message.created_at.asc())
             )
         )
-
