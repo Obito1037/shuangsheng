@@ -43,25 +43,28 @@ def keyword_score(question: str, text: str) -> float:
 class RetrievalService:
     """Safe retrieval layer for local cached learning chunks.
 
-    It prefers embedding similarity when both query and chunk embeddings are available.
-    If the embedding provider is unavailable or old chunks have no vector, it falls back
-    to deterministic keyword retrieval. This keeps chat stable while providers are being
-    configured.
+    Twin mode retrieves only chunks explicitly trained into the selected twin. This
+    prevents different learning twins from sharing context accidentally. Embedding
+    similarity is preferred; keyword retrieval is a deterministic fallback.
     """
 
     def __init__(self, db: Session, registry: ProviderRegistry | None = None) -> None:
         self.db = db
         self.registry = registry or create_provider_registry()
 
-    def retrieve(self, *, user_id: str, question: str, limit: int = 4, scan_limit: int = 120) -> list[RetrievedChunk]:
-        chunks = list(
-            self.db.scalars(
-                select(DocumentChunk)
-                .where(DocumentChunk.user_id == user_id)
-                .order_by(DocumentChunk.created_at.desc())
-                .limit(scan_limit)
-            )
-        )
+    def retrieve(
+        self,
+        *,
+        user_id: str,
+        question: str,
+        twin_id: str | None = None,
+        limit: int = 4,
+        scan_limit: int = 120,
+    ) -> list[RetrievedChunk]:
+        stmt = select(DocumentChunk).where(DocumentChunk.user_id == user_id)
+        if twin_id is not None:
+            stmt = stmt.where(DocumentChunk.twin_id == twin_id)
+        chunks = list(self.db.scalars(stmt.order_by(DocumentChunk.created_at.desc()).limit(scan_limit)))
         if not chunks:
             return []
         embedded = self._embedding_rank(question=question, chunks=chunks, limit=limit)
@@ -69,8 +72,8 @@ class RetrievalService:
             return embedded
         return self._keyword_rank(question=question, chunks=chunks, limit=limit)
 
-    def local_context(self, *, user_id: str, question: str, limit: int = 4) -> str:
-        retrieved = self.retrieve(user_id=user_id, question=question, limit=limit)
+    def local_context(self, *, user_id: str, question: str, twin_id: str | None = None, limit: int = 4) -> str:
+        retrieved = self.retrieve(user_id=user_id, question=question, twin_id=twin_id, limit=limit)
         lines: list[str] = []
         for index, item in enumerate(retrieved, start=1):
             text = item.text.strip().replace("\n", " ")[:700]
