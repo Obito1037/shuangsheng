@@ -27,9 +27,12 @@ class DocumentService:
 
     def parse(self, *, user_id: str, payload: DocumentParseRequest) -> tuple[Document, int]:
         existing: Document | None = None
+        twin_id = payload.twin_id
         if payload.file_id:
             file = self.files.get(user_id=user_id, file_id=payload.file_id)
             existing = self.documents.get_by_file_for_user(user_id=user_id, file_id=file.id)
+            if existing and twin_id is None:
+                twin_id = existing.twin_id
             try:
                 text = self._extract_text(file)
             except ValueError:
@@ -47,22 +50,40 @@ class DocumentService:
             existing.title = title
             existing.raw_text = text
             existing.status = "parsed"
+            existing.twin_id = twin_id
             document = self.documents.save(existing)
         else:
-            document = self.documents.create(user_id=user_id, title=title, raw_text=text, file_id=payload.file_id, status="parsed")
+            document = self.documents.create(
+                user_id=user_id,
+                title=title,
+                raw_text=text,
+                file_id=payload.file_id,
+                status="parsed",
+                twin_id=twin_id,
+            )
         chunks = self.chunks.split_text(text)
         for index, chunk in enumerate(chunks):
-            self.documents.create_chunk(user_id=user_id, document_id=document.id, chunk_index=index, source=title, text=chunk)
+            self.documents.create_chunk(
+                user_id=user_id,
+                twin_id=twin_id,
+                document_id=document.id,
+                chunk_index=index,
+                source=title,
+                text=chunk,
+            )
         return document, len(chunks)
 
-    def register_upload(self, *, user_id: str, file: FileObject) -> Document:
+    def register_upload(self, *, user_id: str, file: FileObject, twin_id: str | None = None) -> Document:
         existing = self.documents.get_by_file_for_user(user_id=user_id, file_id=file.id)
         if existing:
+            if twin_id and existing.twin_id != twin_id:
+                existing.twin_id = twin_id
+                return self.documents.save(existing)
             return existing
-        return self.documents.create(user_id=user_id, title=file.original_name, raw_text="", file_id=file.id, status="uploaded")
+        return self.documents.create(user_id=user_id, twin_id=twin_id, title=file.original_name, raw_text="", file_id=file.id, status="uploaded")
 
-    def list(self, user_id: str) -> list[DocumentRead]:
-        return [self._read(document, user_id=user_id) for document in self.documents.list_for_user(user_id)]
+    def list(self, user_id: str, twin_id: str | None = None) -> list[DocumentRead]:
+        return [self._read(document, user_id=user_id) for document in self.documents.list_for_user(user_id, twin_id=twin_id)]
 
     def detail(self, *, user_id: str, document_id: str) -> DocumentDetail:
         document = self.documents.get_for_user(user_id=user_id, document_id=document_id)
@@ -81,6 +102,7 @@ class DocumentService:
             file = self.files.get(user_id=user_id, file_id=document.file_id)
         return DocumentRead(
             id=document.id,
+            twin_id=document.twin_id,
             file_id=document.file_id,
             title=document.title,
             status=document.status,
