@@ -1,0 +1,16 @@
+{
+  "choices": [
+    {
+      "message": {
+        "content": "EchoLearn is a learning assistant.",
+        "reasoning_content": "brief reasoning"
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 3,
+    "completion_tokens": 7,
+    "total_tokens": 10
+  }
+}
+

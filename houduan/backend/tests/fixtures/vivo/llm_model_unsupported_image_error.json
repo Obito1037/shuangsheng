@@ -1,0 +1,7 @@
+{
+  "error": {
+    "code": "1010",
+    "message": "Model do not support image input."
+  }
+}
+

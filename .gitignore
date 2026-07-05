@@ -1,0 +1,27 @@
+# Local/runtime secrets
+.env
+*.env
+local.properties
+
+# Python backend runtime files
+*.pyc
+__pycache__/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+houduan/backend/.env
+houduan/backend/echolearn.db
+houduan/backend/storage_data/
+
+# Android/Gradle build outputs
+.gradle/
+build/
+**/.gradle/
+**/build/
+
+# IDE/local metadata
+.idea/
+.vscode/
+
+# Temporary working artifacts
+tmp/

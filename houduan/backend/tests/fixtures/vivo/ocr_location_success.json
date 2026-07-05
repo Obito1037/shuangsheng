@@ -1,0 +1,19 @@
+{
+  "error_code": 0,
+  "error_msg": "succ",
+  "result": {
+    "OCR": [
+      {
+        "words": "EchoLearn",
+        "location": {
+          "top_left": {"x": 1.0, "y": 2.0},
+          "top_right": {"x": 10.0, "y": 2.0},
+          "down_left": {"x": 1.0, "y": 9.0},
+          "down_right": {"x": 10.0, "y": 9.0}
+        }
+      }
+    ],
+    "angle": 0
+  }
+}
+

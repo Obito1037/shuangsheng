@@ -1,0 +1,9 @@
+/.env
+backend/.env
+backend/echolearn.db
+backend/storage_data/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/.mypy_cache/
+backend/.ruff_cache/
+*.pyc

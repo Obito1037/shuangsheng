@@ -1,0 +1,278 @@
+:root {
+  --brand-main-bg: #f7fbff;
+  --brand-alt-bg: #f3f8fc;
+  --brand-surface: #eef7ff;
+  --brand-card: #ffffff;
+  --brand-blue: #0099fd;
+  --brand-dark-blue: #0077cc;
+  --brand-light-blue: #e6f4ff;
+  --on-surface: #1b1c1b;
+  --on-surface-variant: #3e4850;
+  --outline: #6e7881;
+  --outline-variant: #bec8d1;
+  --error: #ba1a1a;
+}
+
+* { box-sizing: border-box; }
+button, input, textarea, select { font: inherit; }
+button { border: 0; cursor: pointer; }
+input, textarea, select { color: var(--on-surface); }
+
+[class~="hidden"] { display: none !important; }
+[class~="block"] { display: block; }
+[class~="flex"] { display: flex; }
+[class~="inline-flex"] { display: inline-flex; }
+[class~="grid"] { display: grid; }
+[class~="absolute"] { position: absolute; }
+[class~="relative"] { position: relative; }
+[class~="fixed"] { position: fixed; }
+[class~="inset-0"] { inset: 0; }
+[class~="top-0"] { top: 0; }
+[class~="left-0"] { left: 0; }
+[class~="right-0"] { right: 0; }
+[class~="bottom-0"] { bottom: 0; }
+[class~="top-1"] { top: 0.25rem; }
+[class~="bottom-1"] { bottom: 0.25rem; }
+[class~="left-1"] { left: 0.25rem; }
+[class~="left-4"] { left: 1rem; }
+[class~="right-2"] { right: 0.5rem; }
+[class~="right-4"] { right: 1rem; }
+[class~="top-1/2"] { top: 50%; }
+[class~="-translate-y-1/2"] { transform: translateY(-50%); }
+[class~="z-10"] { z-index: 10; }
+[class~="z-20"] { z-index: 20; }
+[class~="z-30"] { z-index: 30; }
+[class~="z-40"] { z-index: 40; }
+[class~="z-[110]"] { z-index: 110; }
+
+[class~="w-full"] { width: 100%; }
+[class~="h-full"] { height: 100%; }
+[class~="h-1"] { height: 0.25rem; }
+[class~="h-1.5"] { height: 0.375rem; }
+[class~="h-2"] { height: 0.5rem; }
+[class~="h-5"] { height: 1.25rem; }
+[class~="h-9"] { height: 2.25rem; }
+[class~="h-10"] { height: 2.5rem; }
+[class~="h-12"] { height: 3rem; }
+[class~="h-14"] { height: 3.5rem; }
+[class~="h-16"] { height: 4rem; }
+[class~="h-[64px]"] { height: 64px; }
+[class~="h-[120px]"] { height: 120px; }
+[class~="h-[100dvh]"] { height: 100dvh; }
+[class~="min-h-[100dvh]"] { min-height: 100dvh; }
+[class~="w-2"] { width: 0.5rem; }
+[class~="w-5"] { width: 1.25rem; }
+[class~="w-10"] { width: 2.5rem; }
+[class~="w-12"] { width: 3rem; }
+[class~="w-16"] { width: 4rem; }
+[class~="w-24"] { width: 6rem; }
+[class~="w-48"] { width: 12rem; }
+[class~="w-[120px]"] { width: 120px; }
+[class~="max-w-[480px]"] { max-width: 480px; }
+[class~="max-w-[600px]"] { max-width: 600px; }
+[class~="max-w-[800px]"] { max-width: 800px; }
+[class~="max-w-md"] { max-width: 28rem; }
+[class~="flex-1"] { flex: 1 1 0%; }
+[class~="shrink-0"] { flex-shrink: 0; }
+[class~="min-w-0"] { min-width: 0; }
+
+[class~="flex-col"] { flex-direction: column; }
+[class~="items-center"] { align-items: center; }
+[class~="items-start"] { align-items: flex-start; }
+[class~="justify-center"] { justify-content: center; }
+[class~="justify-between"] { justify-content: space-between; }
+[class~="text-center"] { text-align: center; }
+[class~="text-left"] { text-align: left; }
+[class~="mx-auto"] { margin-left: auto; margin-right: auto; }
+[class~="mt-auto"] { margin-top: auto; }
+[class~="mb-1"] { margin-bottom: 0.25rem; }
+[class~="mb-2"] { margin-bottom: 0.5rem; }
+[class~="mb-3"] { margin-bottom: 0.75rem; }
+[class~="mb-4"] { margin-bottom: 1rem; }
+[class~="mb-6"] { margin-bottom: 1.5rem; }
+[class~="mb-8"] { margin-bottom: 2rem; }
+[class~="mt-1"] { margin-top: 0.25rem; }
+[class~="mt-8"] { margin-top: 2rem; }
+[class~="-ml-2"] { margin-left: -0.5rem; }
+[class~="my-6"] { margin-top: 1.5rem; margin-bottom: 1.5rem; }
+[class~="mx-1"] { margin-left: 0.25rem; margin-right: 0.25rem; }
+
+[class~="gap-1"] { gap: 0.25rem; }
+[class~="gap-1.5"] { gap: 0.375rem; }
+[class~="gap-2"] { gap: 0.5rem; }
+[class~="gap-3"] { gap: 0.75rem; }
+[class~="gap-4"] { gap: 1rem; }
+[class~="gap-8"] { gap: 2rem; }
+[class~="space-y-1"] > * + * { margin-top: 0.25rem; }
+[class~="space-y-3"] > * + * { margin-top: 0.75rem; }
+[class~="space-y-4"] > * + * { margin-top: 1rem; }
+[class~="space-y-6"] > * + * { margin-top: 1.5rem; }
+[class~="space-y-8"] > * + * { margin-top: 2rem; }
+[class~="grid-cols-2"] { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+
+[class~="p-1"] { padding: 0.25rem; }
+[class~="p-2"] { padding: 0.5rem; }
+[class~="p-2.5"] { padding: 0.625rem; }
+[class~="p-3"] { padding: 0.75rem; }
+[class~="p-4"] { padding: 1rem; }
+[class~="p-5"] { padding: 1.25rem; }
+[class~="p-6"] { padding: 1.5rem; }
+[class~="p-8"] { padding: 2rem; }
+[class~="px-1"] { padding-left: 0.25rem; padding-right: 0.25rem; }
+[class~="px-2"] { padding-left: 0.5rem; padding-right: 0.5rem; }
+[class~="px-3"] { padding-left: 0.75rem; padding-right: 0.75rem; }
+[class~="px-4"] { padding-left: 1rem; padding-right: 1rem; }
+[class~="px-6"] { padding-left: 1.5rem; padding-right: 1.5rem; }
+[class~="px-margin-mobile"] { padding-left: 20px; padding-right: 20px; }
+[class~="py-0.5"] { padding-top: 0.125rem; padding-bottom: 0.125rem; }
+[class~="py-1.5"] { padding-top: 0.375rem; padding-bottom: 0.375rem; }
+[class~="py-2"] { padding-top: 0.5rem; padding-bottom: 0.5rem; }
+[class~="py-3"] { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+[class~="py-4"] { padding-top: 1rem; padding-bottom: 1rem; }
+[class~="pt-2"] { padding-top: 0.5rem; }
+[class~="pt-12"] { padding-top: 3rem; }
+[class~="pb-2"] { padding-bottom: 0.5rem; }
+[class~="pb-4"] { padding-bottom: 1rem; }
+[class~="pb-8"] { padding-bottom: 2rem; }
+[class~="pb-safe-bottom"] { padding-bottom: max(env(safe-area-inset-bottom), 16px); }
+[class~="pl-5"] { padding-left: 1.25rem; }
+[class~="pl-12"] { padding-left: 3rem; }
+[class~="pl-14"] { padding-left: 3.5rem; }
+[class~="pl-28"] { padding-left: 7rem; }
+[class~="pr-2"] { padding-right: 0.5rem; }
+[class~="pr-4"] { padding-right: 1rem; }
+[class~="pr-10"] { padding-right: 2.5rem; }
+[class~="pr-12"] { padding-right: 3rem; }
+[class~="pr-[100px]"] { padding-right: 100px; }
+
+[class~="rounded"] { border-radius: 0.25rem; }
+[class~="rounded-lg"] { border-radius: 0.5rem; }
+[class~="rounded-xl"] { border-radius: 0.75rem; }
+[class~="rounded-2xl"] { border-radius: 1rem; }
+[class~="rounded-full"] { border-radius: 9999px; }
+[class~="rounded-[12px]"] { border-radius: 12px; }
+[class~="rounded-[16px]"] { border-radius: 16px; }
+[class~="rounded-[24px]"] { border-radius: 24px; }
+[class~="rounded-[28px]"] { border-radius: 28px; }
+[class~="rounded-[32px]"] { border-radius: 32px; }
+[class~="border"] { border: 1px solid rgba(0, 153, 253, 0.1); }
+[class~="border-2"] { border-width: 2px; }
+[class~="border-dashed"] { border-style: dashed; }
+[class~="border-b"] { border-bottom: 1px solid rgba(0,0,0,0.08); }
+[class~="border-l-2"] { border-left: 2px solid rgba(0,153,253,0.2); }
+[class~="border-none"] { border: 0; }
+
+[class~="overflow-hidden"] { overflow: hidden; }
+[class~="overflow-y-auto"] { overflow-y: auto; }
+[class~="overflow-x-auto"] { overflow-x: auto; }
+[class~="truncate"] { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+[class~="leading-relaxed"] { line-height: 1.625; }
+[class~="uppercase"] { text-transform: uppercase; }
+[class~="tracking-widest"] { letter-spacing: 0.1em; }
+
+[class~="font-bold"] { font-weight: 700; }
+[class~="font-semibold"] { font-weight: 600; }
+[class~="font-medium"] { font-weight: 500; }
+[class~="font-mono"] { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; }
+[class~="text-xs"] { font-size: 0.75rem; line-height: 1rem; }
+[class~="text-sm"] { font-size: 0.875rem; line-height: 1.25rem; }
+[class~="text-base"] { font-size: 1rem; line-height: 1.5rem; }
+[class~="text-xl"] { font-size: 1.25rem; line-height: 1.75rem; }
+[class~="text-3xl"] { font-size: 1.875rem; line-height: 2.25rem; }
+[class~="text-[10px]"] { font-size: 10px; }
+[class~="text-[12px]"] { font-size: 12px; }
+[class~="text-[13px]"] { font-size: 13px; }
+[class~="text-[14px]"] { font-size: 14px; }
+[class~="text-[15px]"] { font-size: 15px; }
+[class~="text-[16px]"] { font-size: 16px; }
+[class~="text-[18px]"] { font-size: 18px; }
+[class~="text-[20px]"] { font-size: 20px; }
+[class~="text-[22px]"] { font-size: 22px; }
+[class~="text-[24px]"] { font-size: 24px; }
+[class~="text-[28px]"] { font-size: 28px; }
+[class~="text-[32px]"] { font-size: 32px; }
+[class~="text-[44px]"] { font-size: 44px; }
+[class~="text-body-md"], [class~="font-body-md"] { font-size: 16px; line-height: 24px; }
+[class~="text-label-sm"], [class~="font-label-sm"] { font-size: 12px; line-height: 16px; }
+[class~="text-label-md"], [class~="font-label-md"] { font-size: 14px; line-height: 20px; }
+[class~="text-headline-lg-mobile"] { font-size: 28px; line-height: 36px; }
+
+[class~="text-white"] { color: #fff; }
+[class~="text-white/60"] { color: rgba(255,255,255,0.6); }
+[class~="text-white/70"] { color: rgba(255,255,255,0.7); }
+[class~="text-white/80"] { color: rgba(255,255,255,0.8); }
+[class~="text-white/90"] { color: rgba(255,255,255,0.9); }
+[class~="text-brand-blue"] { color: var(--brand-blue); }
+[class~="text-brand-dark-blue"] { color: var(--brand-dark-blue); }
+[class~="text-on-surface"] { color: var(--on-surface); }
+[class~="text-on-surface-variant"] { color: var(--on-surface-variant); }
+[class~="text-outline"] { color: var(--outline); }
+[class~="text-outline-variant"] { color: var(--outline-variant); }
+[class~="text-error"] { color: var(--error); }
+[class~="text-secondary"] { color: #5f5e5e; }
+[class~="text-blue-500"] { color: #3b82f6; }
+[class~="text-green-500"] { color: #22c55e; }
+[class~="text-purple-500"] { color: #a855f7; }
+[class~="text-orange-500"] { color: #f97316; }
+
+[class~="bg-white"] { background: #fff; }
+[class~="bg-transparent"] { background: transparent; }
+[class~="bg-brand-main-bg"] { background: var(--brand-main-bg); }
+[class~="bg-brand-card"] { background: var(--brand-card); }
+[class~="bg-brand-card/50"] { background: rgba(255,255,255,0.5); }
+[class~="bg-brand-surface"] { background: var(--brand-surface); }
+[class~="bg-brand-light-blue"] { background: var(--brand-light-blue); }
+[class~="bg-brand-light-blue/50"] { background: rgba(230,244,255,0.5); }
+[class~="bg-brand-blue"] { background: var(--brand-blue); }
+[class~="bg-primary-container"] { background: var(--brand-light-blue); }
+[class~="bg-surface-container-highest"] { background: #e4e2e1; }
+[class~="bg-blue-50"] { background: #eff6ff; }
+[class~="bg-green-50"] { background: #f0fdf4; }
+[class~="bg-purple-50"] { background: #faf5ff; }
+[class~="bg-orange-50"] { background: #fff7ed; }
+[class~="bg-blue-500"] { background: #3b82f6; }
+[class~="bg-green-500"] { background: #22c55e; }
+[class~="bg-purple-500"] { background: #a855f7; }
+[class~="bg-white/10"] { background: rgba(255,255,255,0.1); }
+[class~="bg-white/20"] { background: rgba(255,255,255,0.2); }
+[class~="bg-[#1E2328]"] { background: #1e2328; }
+[class~="bg-[#2A3036]"] { background: #2a3036; }
+
+[class~="shadow-sm"] { box-shadow: 0 1px 3px rgba(25,54,84,0.08); }
+[class~="shadow-md"] { box-shadow: 0 4px 12px rgba(25,54,84,0.10); }
+[class~="shadow-lg"] { box-shadow: 0 10px 22px rgba(25,54,84,0.12); }
+[class~="shadow-2xl"] { box-shadow: 0 25px 50px rgba(0,0,0,0.25); }
+[class~="opacity-70"] { opacity: 0.7; }
+[class~="cursor-pointer"] { cursor: pointer; }
+[class~="focus:outline-none"]:focus { outline: none; }
+[class~="transition-colors"], [class~="transition-colors-fast"] { transition: background-color 180ms, color 180ms, border-color 180ms; }
+[class~="transition-transform"] { transition: transform 180ms; }
+[class~="transition-opacity"] { transition: opacity 180ms; }
+[class~="duration-200"] { transition-duration: 200ms; }
+[class~="duration-300"] { transition-duration: 300ms; }
+
+@media (max-width: 430px) {
+  #screen-auth > div {
+    padding-top: 18px;
+  }
+  #brand-header {
+    margin-bottom: 14px;
+  }
+  #brand-logo-dest {
+    width: 82px;
+    height: 82px;
+  }
+  #brand-title {
+    font-size: 24px;
+    line-height: 30px;
+  }
+  .form-viewport {
+    min-height: 0;
+  }
+  .m3-input {
+    height: 46px;
+  }
+  #auth-footer {
+    padding-bottom: max(env(safe-area-inset-bottom), 8px);
+  }
+}
