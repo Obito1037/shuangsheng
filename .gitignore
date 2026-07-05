@@ -1,27 +1,37 @@
-# Local/runtime secrets
+# secrets
 .env
 *.env
-local.properties
+!.env.example
 
-# Python backend runtime files
-*.pyc
+# databases and storage
+*.db
+*.sqlite
+*.sqlite3
+storage_data/
+backend/storage_data/
+
+# Python
 __pycache__/
+*.py[cod]
 .pytest_cache/
 .ruff_cache/
 .mypy_cache/
-houduan/backend/.env
-houduan/backend/echolearn.db
-houduan/backend/storage_data/
+.coverage
+htmlcov/
+.venv/
+venv/
 
-# Android/Gradle build outputs
+# Android / Gradle
 .gradle/
 build/
-**/.gradle/
 **/build/
-
-# IDE/local metadata
+local.properties
+*.iml
 .idea/
-.vscode/
 
-# Temporary working artifacts
-tmp/
+# OS
+.DS_Store
+Thumbs.db
+
+# migration temp
+_repo_migration_backup/
