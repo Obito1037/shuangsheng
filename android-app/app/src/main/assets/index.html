@@ -4,11 +4,11 @@
 <meta charset="utf-8"/>
 <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" name="viewport"/>
 <title>Twin AI - 合并版</title>
-<!-- Local assets only: loaded through WebViewAssetLoader appassets domain. -->
-<link href="tailwind-local.css" rel="stylesheet"/>
-<link href="offline-icons.css" rel="stylesheet"/>
-<script defer src="webview-runtime-check.js"></script>
-<script defer src="offline-icons.js"></script>
+<!-- Fonts & Icons -->
+<link href="css/jakarta.css" rel="stylesheet"/>
+<link href="css/material-rounded.css" rel="stylesheet"/>
+<link href="css/material-outlined.css" rel="stylesheet"/>
+<script src="js/tailwindcss.js"></script>
 <!-- BEGIN: Tailwind Config -->
 <script data-purpose="tailwind-config" id="tailwind-config">
         try {
@@ -132,8 +132,8 @@
         /* Base View System & Unified Theme */
         html, body {
             width: 100%;
-            height: 100vh; /* Fallback */
-            min-height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
+            min-height: calc(var(--app-vh, 1vh) * 100);
             margin: 0;
             padding: 0;
             overflow: hidden;
@@ -181,7 +181,7 @@
         }
         
         .logo-splash {
-            transform: translate3d(0, 30vh, 0) scale(1);
+            transform: translate3d(0, 0, 0) scale(1);
         }
         
         .logo-auth {
@@ -214,7 +214,7 @@
         .form-viewport {
             position: relative;
             width: 100%;
-            min-height: 380px;
+            min-height: 310px;
             overflow: visible;
         }
 
@@ -272,7 +272,7 @@
             pointer-events: none;
             transition: opacity 300ms cubic-bezier(0.2, 0, 0, 1);
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
         }
         
         .overlay-screen.active {
@@ -321,6 +321,16 @@
         }
     </style>
 <style data-purpose="app-styles">
+        @keyframes progress-shimmer {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .composer-container {
+            bottom: var(--keyboard-inset, 0px);
+            transition: bottom 180ms cubic-bezier(0.2, 0, 0, 1);
+        }
+        
         /* Main App Shared Styles */
         .glass-header {
             background: rgba(247, 251, 255, 0.85);
@@ -370,7 +380,7 @@
             top: 0;
             left: 0;
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
             display: flex;
             flex-direction: column;
             opacity: 0;
@@ -402,10 +412,14 @@
         /* Sub-screen transition */
         .screen.sub-screen {
             transform: translateX(20px);
+            background-color: #F7FBFF; /* brand-main-bg fallback */
         }
         
+        .screen.sub-screen.active,
         .screen.sub-screen.entering {
             transform: translateX(0);
+            pointer-events: auto;
+            opacity: 1;
         }
 
         /* Drawer Transition */
@@ -414,7 +428,7 @@
             pointer-events: none;
             transition: opacity 240ms cubic-bezier(0.2, 0, 0, 1);
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
         }
         #drawer-overlay.active {
             opacity: 1;
@@ -423,7 +437,7 @@
         #drawer {
             transform: translateX(-100%);
             transition: transform 280ms cubic-bezier(0.2, 0, 0, 1);
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
         }
         #drawer.active {
             transform: translateX(0);
@@ -627,7 +641,7 @@
             pointer-events: none;
             transition: opacity 240ms cubic-bezier(0.2, 0, 0, 1);
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
         }
         #upload-overlay.active {
             opacity: 1;
@@ -640,12 +654,12 @@
             inset: 0;
             z-index: 1000;
             width: 100vw;
-            height: 100dvh;
+            height: calc(var(--app-vh, 1vh) * 100);
             /* background is handled globally */
         }
         
         .composer-container {
-            padding-bottom: max(env(safe-area-inset-bottom), 24px);
+            padding-bottom: max(env(safe-area-inset-bottom), 8px);
         }
     </style>
 <!-- END: Styles -->
@@ -678,17 +692,17 @@
 </div>
 <h1 class="text-on-surface tracking-tight mt-sm font-headline-xl text-headline-xl" id="splash-title">双生</h1>
 </div>
-<div class="absolute bottom-xl left-0 right-0 flex flex-col items-center space-y-lg px-margin-mobile" id="splash-footer">
+<div class="absolute bottom-8 left-0 right-0 flex flex-col items-center space-y-lg px-margin-mobile" id="splash-footer">
 <p class="text-secondary tracking-widest uppercase font-body-lg text-body-lg">试错留给分身，时间留给成长</p>
 <div class="w-48 h-1 bg-surface-container-highest rounded-full overflow-hidden relative">
-<div class="absolute inset-0 bg-primary-container rounded-full w-1/2 shadow-[0px_0px_12px_rgba(33,167,230,0.3)]" style="animation: progress-shimmer 2.5s infinite linear; @keyframes progress-shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }"></div>
+<div class="absolute inset-0 bg-primary-container rounded-full w-1/2 shadow-[0px_0px_12px_rgba(33,167,230,0.3)]" style="animation: progress-shimmer 2.5s infinite linear;"></div>
 </div>
 </div>
 </section>
 <!-- ================= MAIN AUTH FLOW ================= -->
 <section class="view-screen overflow-y-auto hide-scrollbar" id="screen-auth">
-<div class="w-full max-w-[480px] mx-auto min-h-[100dvh] flex flex-col pt-12 pb-safe-bottom px-margin-mobile">
-<div class="flex flex-col items-center text-center mb-8 z-20 w-full shrink-0" id="brand-header">
+<div class="w-full max-w-[480px] mx-auto h-full flex flex-col pt-6 pb-safe-bottom px-margin-mobile">
+<div class="flex flex-col items-center text-center mb-4 z-20 w-full shrink-0" id="brand-header">
 <div class="mb-sm flex justify-center items-center h-[120px] w-[120px] logo-container" id="brand-logo-dest"></div>
 <div class="transition-opacity duration-300" id="brand-text">
 <h1 class="font-headline-lg-mobile text-headline-lg-mobile text-on-surface mb-xs font-bold" id="brand-title">欢迎回来</h1>
@@ -715,11 +729,11 @@
 <div class="form-viewport" id="auth-viewport">
 <!-- Panel: Login Password -->
 <div class="auth-panel active" id="panel-login_password">
-<form class="space-y-6" onsubmit="event.preventDefault(); authActions.loginPassword();">
+<form class="space-y-6" onsubmit="event.preventDefault()">
 <div class="space-y-4">
 <div class="relative m3-input rounded-2xl flex items-center group">
 <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-brand-blue transition-colors">person</span>
-<input class="w-full h-full pl-12 pr-4 bg-transparent border-none rounded-2xl font-body-md text-body-md focus:ring-0 placeholder:text-outline-variant outline-none" id="login-account" placeholder="手机号 / 邮箱" type="text"/>
+<input class="w-full h-full pl-12 pr-4 bg-transparent border-none rounded-2xl font-body-md text-body-md focus:ring-0 placeholder:text-outline-variant outline-none" placeholder="手机号 / 邮箱" type="text"/>
 </div>
 <div class="relative m3-input rounded-2xl flex items-center group">
 <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-brand-blue transition-colors">lock</span>
@@ -732,35 +746,34 @@
 <div class="flex justify-end px-1">
 <a class="font-label-sm text-label-sm text-brand-blue hover:text-brand-dark-blue transition-colors cursor-pointer" onclick="switchAuthState('forgot_password')">忘记密码？</a>
 </div>
-<button class="w-full h-14 bg-brand-blue text-white font-label-md text-label-md font-bold rounded-full shadow-lg shadow-brand-blue/20 transition-transform active:scale-[0.98] focus:outline-none" id="btn-login-password">登录</button>
+<button class="w-full h-14 bg-brand-blue text-white font-label-md text-label-md font-bold rounded-full shadow-lg shadow-brand-blue/20 transition-transform active:scale-[0.98] focus:outline-none">登录</button>
 </form>
-<p class="font-label-sm text-label-sm text-error text-center mt-3 hidden" id="auth-error-login"></p>
 <div class="flex items-center my-6">
 <div class="flex-1 h-px bg-surface-container-highest"></div>
 <span class="px-4 font-label-sm text-label-sm text-outline">或</span>
 <div class="flex-1 h-px bg-surface-container-highest"></div>
 </div>
 <div class="grid grid-cols-2 gap-4">
-<button class="flex items-center justify-center gap-2 py-3 rounded-full border border-surface-container-highest text-on-surface-variant font-label-sm text-label-sm hover:bg-brand-surface transition-colors active:scale-[0.98] focus:outline-none" onclick="authActions.unsupported('验证码登录接口尚未接入，当前请使用邮箱密码登录。')">
+<button class="flex items-center justify-center gap-2 py-3 rounded-full border border-surface-container-highest text-on-surface-variant font-label-sm text-label-sm hover:bg-brand-surface transition-colors active:scale-[0.98] focus:outline-none" onclick="switchAuthState('login_sms')">
 <span class="material-symbols-outlined text-[20px]">sms</span>验证码登录
                             </button>
-<button class="flex items-center justify-center gap-2 py-3 rounded-full border border-surface-container-highest text-on-surface-variant font-label-sm text-label-sm hover:bg-brand-surface transition-colors active:scale-[0.98] focus:outline-none" onclick="authActions.unsupported(`当前连接本地后端：${apiClient.baseUrl}`)">
-<span class="material-symbols-outlined text-[20px]">account_circle</span>本地后端
+<button class="flex items-center justify-center gap-2 py-3 rounded-full border border-surface-container-highest text-on-surface-variant font-label-sm text-label-sm hover:bg-brand-surface transition-colors active:scale-[0.98] focus:outline-none" onclick="loginSuccess()">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>测试账号
                             </button>
 </div>
 </div>
 <!-- Panel: Register -->
 <div class="auth-panel" id="panel-register">
-<form class="space-y-6" onsubmit="event.preventDefault(); authActions.register();">
+<form class="space-y-6" onsubmit="event.preventDefault()">
 <div class="space-y-4">
 <div class="relative m3-input rounded-2xl flex items-center group">
 <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-brand-blue transition-colors">person</span>
-<input class="w-full h-full pl-12 pr-4 bg-transparent border-none rounded-2xl font-body-md text-body-md focus:ring-0 placeholder:text-outline-variant outline-none" id="register-account" placeholder="邮箱" type="email"/>
+<input class="w-full h-full pl-12 pr-4 bg-transparent border-none rounded-2xl font-body-md text-body-md focus:ring-0 placeholder:text-outline-variant outline-none" placeholder="手机号 / 邮箱" type="text"/>
 </div>
 <div class="relative m3-input rounded-2xl flex items-center group">
 <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-brand-blue transition-colors">verified_user</span>
-<input class="w-full h-full pl-12 pr-[100px] bg-transparent border-none rounded-2xl font-body-md text-body-md focus:ring-0 placeholder:text-outline-variant outline-none" id="register-display-name" placeholder="昵称（可选）" type="text"/>
-<button class="absolute right-2 h-9 px-4 bg-brand-light-blue text-brand-blue font-label-sm font-bold rounded-full transition-colors hover:bg-brand-light-blue/80 focus:outline-none" onclick="authActions.unsupported('验证码注册暂未接入，本地阶段使用邮箱密码注册。')" type="button">验证码</button>
+<input class="w-full h-full pl-12 pr-[100px] bg-transparent border-none rounded-2xl font-body-md text-body-md focus:ring-0 placeholder:text-outline-variant outline-none" placeholder="验证码" type="text"/>
+<button class="absolute right-2 h-9 px-4 bg-brand-light-blue text-brand-blue font-label-sm font-bold rounded-full transition-colors hover:bg-brand-light-blue/80 focus:outline-none" type="button">获取验证码</button>
 </div>
 <div class="relative m3-input rounded-2xl flex items-center group">
 <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-brand-blue transition-colors">lock</span>
@@ -770,13 +783,12 @@
 </button>
 </div>
 </div>
-<button class="w-full h-14 bg-brand-blue text-white font-label-md text-label-md font-bold rounded-full shadow-lg shadow-brand-blue/20 transition-transform active:scale-[0.98] focus:outline-none" id="btn-register">注册</button>
+<button class="w-full h-14 bg-brand-blue text-white font-label-md text-label-md font-bold rounded-full shadow-lg shadow-brand-blue/20 transition-transform active:scale-[0.98] focus:outline-none">注册</button>
 </form>
-<p class="font-label-sm text-label-sm text-error text-center mt-3 hidden" id="auth-error-register"></p>
 </div>
 <!-- Panel: Login SMS -->
 <div class="auth-panel" id="panel-login_sms">
-<form class="space-y-6 pt-2" onsubmit="event.preventDefault(); authActions.unsupported('验证码登录接口尚未接入，当前请使用邮箱密码登录。')">
+<form class="space-y-6 pt-2" onsubmit="event.preventDefault()">
 <div class="space-y-4">
 <div class="relative m3-input rounded-2xl flex items-center group">
 <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-brand-blue transition-colors">person</span>
@@ -793,7 +805,7 @@
 </div>
 <!-- Panel: Forgot Password -->
 <div class="auth-panel" id="panel-forgot_password">
-<form class="space-y-6 pt-2" onsubmit="event.preventDefault(); authActions.unsupported('找回密码接口尚未接入，请先使用已注册邮箱密码登录。')">
+<form class="space-y-6 pt-2" onsubmit="event.preventDefault()">
 <div class="space-y-4">
 <div class="relative m3-input rounded-2xl flex items-center group">
 <span class="material-symbols-outlined absolute left-4 text-outline group-focus-within:text-brand-blue transition-colors">phone_iphone</span>
@@ -908,15 +920,19 @@
 <h2 class="text-[20px] font-semibold text-on-surface">双生</h2>
 <span class="text-[12px] text-on-surface-variant ml-auto">你的学习分身</span>
 </div>
+<div class="relative mb-4">
+    <span class="material-symbols-rounded absolute left-3 top-1/2 -translate-y-1/2 text-outline-variant text-[18px]">search</span>
+    <input class="w-full pl-9 pr-3 py-2 bg-brand-surface rounded-xl text-[14px] outline-none border-none" placeholder="搜索分身或对话..." type="text"/>
+</div>
+<button class="w-full flex items-center justify-center gap-2 p-3 rounded-xl bg-brand-blue text-white btn-press focus:outline-none mb-2 shadow-md shadow-brand-blue/20" onclick="app.navigate('create-twin'); app.closeDrawer()">
+    <span class="material-symbols-rounded text-[18px]">add</span>
+    <span class="font-medium text-[14px]">新建分身</span>
+</button>
 </div>
 <div class="px-4 flex-1 overflow-y-auto" id="sidebar-twins-list">
 <!-- Rendered via JS -->
 </div>
-<div class="p-4 border-t border-brand-blue/5 space-y-2 mt-auto pb-safe-bottom">
-<button class="w-full flex items-center gap-3 p-3 rounded-[16px] bg-brand-light-blue text-brand-dark-blue btn-press focus:outline-none transition-colors-fast" onclick="app.navigate('create-twin'); app.closeDrawer()">
-<span class="material-symbols-rounded text-[20px]">add</span>
-<span class="font-medium text-[15px]">新建分身</span>
-</button>
+<div class="p-4 border-t border-brand-blue/5 mt-auto pb-safe-bottom">
 <button class="w-full flex items-center gap-3 p-3 rounded-[16px] hover:bg-brand-surface text-on-surface-variant btn-press focus:outline-none transition-colors-fast" onclick="app.navigate('settings'); app.closeDrawer()">
 <span class="material-symbols-rounded text-[20px]">settings</span>
 <span class="font-medium text-[15px]">设置</span>
@@ -930,25 +946,25 @@
 <div class="w-12 h-1.5 bg-outline-variant/40 rounded-full mx-auto mb-6"></div>
 <h3 class="text-[18px] font-semibold text-on-surface mb-6 text-center">发送内容或上传文件</h3>
 <div class="grid grid-cols-4 gap-4 max-w-[400px] mx-auto w-full">
-<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false); app.navigate('upload-material')">
+<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false); app.pickFiles('.pdf,.doc,.docx,.ppt,.pptx,.txt,.md')">
 <div class="w-14 h-14 rounded-[20px] bg-blue-50 text-brand-blue flex items-center justify-center shadow-sm">
 <span class="material-symbols-rounded text-[28px]">description</span>
 </div>
 <span class="text-[12px] font-medium text-on-surface-variant">文档</span>
 </button>
-<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false); alert('图片上传可保存到资料库，当前版本暂不自动解析图片内容。')">
+<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false)">
 <div class="w-14 h-14 rounded-[20px] bg-green-50 text-green-500 flex items-center justify-center shadow-sm">
 <span class="material-symbols-rounded text-[28px]">image</span>
 </div>
 <span class="text-[12px] font-medium text-on-surface-variant">图片</span>
 </button>
-<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false); alert('音频上传可保存到资料库，当前版本暂不自动转写。')">
+<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false)">
 <div class="w-14 h-14 rounded-[20px] bg-purple-50 text-purple-500 flex items-center justify-center shadow-sm">
 <span class="material-symbols-rounded text-[28px]">mic</span>
 </div>
 <span class="text-[12px] font-medium text-on-surface-variant">录音</span>
 </button>
-<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false); alert('拍照上传待接入相机流程，请先使用文件选择。')">
+<button class="flex flex-col items-center gap-2 btn-press focus:outline-none" onclick="app.toggleUploadSheet(false)">
 <div class="w-14 h-14 rounded-[20px] bg-orange-50 text-orange-500 flex items-center justify-center shadow-sm">
 <span class="material-symbols-rounded text-[28px]">camera_alt</span>
 </div>
@@ -1070,7 +1086,7 @@
 <div class="flex flex-wrap gap-2 ml-13 pl-13">
 <button class="px-4 py-2 bg-brand-card border border-brand-blue/10 rounded-[16px] text-[13px] font-medium text-on-surface-variant hover:bg-brand-surface btn-press shadow-sm transition-colors-fast focus:outline-none" onclick="app.navigate('learning-route')">学习路线</button>
 <button class="px-4 py-2 bg-brand-card border border-brand-blue/10 rounded-[16px] text-[13px] font-medium text-on-surface-variant hover:bg-brand-surface btn-press shadow-sm transition-colors-fast focus:outline-none" onclick="app.navigate('blackboard')">黑板演示</button>
-<button class="px-4 py-2 bg-brand-card border border-brand-blue/10 rounded-[16px] text-[13px] font-medium text-on-surface-variant hover:bg-brand-surface btn-press shadow-sm transition-colors-fast focus:outline-none" onclick="app.navigate('upload-material')">补充资料</button>
+<button class="px-4 py-2 bg-brand-card border border-brand-blue/10 rounded-[16px] text-[13px] font-medium text-on-surface-variant hover:bg-brand-surface btn-press shadow-sm transition-colors-fast focus:outline-none" onclick="app.pickFiles('.pdf,.doc,.docx,.ppt,.pptx,.txt,.md,image/*')">补充资料</button>
 </div>
 </div>
 <div class="flex flex-col gap-3 w-full stagger-enter stagger-5 hidden" id="loading-message">
@@ -1115,8 +1131,6 @@
 <span class="material-symbols-rounded text-[22px]" style="font-variation-settings: 'FILL' 1;">arrow_upward</span>
 </button>
 </div>
-</div>
-<p class="text-[11px] text-outline-variant mt-3 text-center opacity-60 pb-2">Shift + Enter 换行，Enter 发送</p>
 </div>
 </div>
 </div>
@@ -1193,7 +1207,7 @@
 <textarea class="w-full p-3 rounded-xl border border-outline-variant/40 bg-brand-main-bg focus:border-brand-blue focus:ring-1 focus:ring-brand-blue outline-none" placeholder="描述你希望这个分身帮你达成什么目标..." rows="3"></textarea>
 </div>
 </div>
-<button class="w-full py-4 bg-brand-blue text-white font-medium rounded-2xl shadow-md btn-press focus:outline-none" onclick="app.createTwinFromForm()">
+<button class="w-full py-4 bg-brand-blue text-white font-medium rounded-2xl shadow-md btn-press focus:outline-none" onclick="app.navigate('main-chat')">
                 创建并开始
             </button>
 </div>
@@ -1311,7 +1325,7 @@
 </header>
 <main class="flex-1 p-4 md:p-8 flex flex-col justify-center w-full relative z-10 overflow-hidden">
 <div class="max-w-[800px] mx-auto w-full h-full flex flex-col justify-center pb-safe-bottom">
-<div class="bg-[#2A3036] rounded-[24px] border border-white/5 shadow-2xl p-6 md:p-10 aspect-[4/3] flex flex-col items-center justify-center text-center w-full max-h-full" id="blackboard-card">
+<div class="bg-[#2A3036] rounded-[24px] border border-white/5 shadow-2xl p-6 md:p-10 aspect-[4/3] flex flex-col items-center justify-center text-center w-full max-h-full">
 <div class="text-white/60 text-sm mb-4">步骤 2 / 5</div>
 <div class="text-white/90 text-xl md:text-2xl font-mono mb-8 leading-relaxed">
                     F(s) = \int_{0}^{\infty} f(t)e^{-st} dt
@@ -1348,10 +1362,10 @@
 <h1 class="text-[18px] font-semibold text-on-surface">今日学习路线</h1>
 </div>
 </header>
-<main class="flex-1 overflow-y-auto hide-scrollbar p-6 w-full">
+<main class="flex-1 overflow-y-auto hide-scrollbar p-4 w-full">
 <div class="max-w-[600px] mx-auto w-full pb-safe-bottom">
-<div class="relative border-l-2 border-brand-blue/20 ml-4 space-y-8 pb-8">
-<div class="relative pl-8">
+<div class="relative border-l-2 border-brand-blue/20 ml-2 space-y-6 pb-8">
+<div class="relative pl-6">
 <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-brand-blue border-4 border-brand-main-bg shadow-sm"></div>
 <div class="app-card p-4">
 <h3 class="font-semibold text-on-surface mb-1">1. 复习拉普拉斯变换定义</h3>
@@ -1359,14 +1373,14 @@
 <button class="text-xs text-brand-blue font-medium bg-brand-light-blue px-3 py-1.5 rounded-lg btn-press focus:outline-none">开始学习</button>
 </div>
 </div>
-<div class="relative pl-8">
+<div class="relative pl-6">
 <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-brand-surface border-4 border-brand-main-bg shadow-sm"></div>
 <div class="app-card p-4 opacity-70">
 <h3 class="font-semibold text-on-surface mb-1">2. 常见变换对记忆</h3>
 <p class="text-sm text-on-surface-variant mb-3">使用闪卡复习 10 个常用公式。</p>
 </div>
 </div>
-<div class="relative pl-8">
+<div class="relative pl-6">
 <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full bg-brand-surface border-4 border-brand-main-bg shadow-sm"></div>
 <div class="app-card p-4 opacity-70">
 <h3 class="font-semibold text-on-surface mb-1">3. 错题变式训练</h3>
@@ -1597,277 +1611,136 @@
         }
     }
 
-    function normalizeScreens(activeScreenId) {
-        const targetId = `screen-${activeScreenId}`;
-        document.querySelectorAll('.screen').forEach((screen) => {
-            const isActive = screen.id === targetId;
-            screen.classList.toggle('active', isActive);
-            screen.classList.remove('entering', 'leaving');
-            screen.style.removeProperty('opacity');
-            screen.style.removeProperty('transform');
-            screen.style.removeProperty('visibility');
-            screen.style.removeProperty('pointer-events');
-        });
-        document.getElementById('drawer-overlay')?.classList.remove('active');
-        document.getElementById('drawer')?.classList.remove('active');
-        document.getElementById('upload-overlay')?.classList.remove('active');
-        document.getElementById('upload-sheet')?.classList.remove('active');
-        document.getElementById('overlay-doc')?.classList.remove('active');
-        if (window.app?.state) {
-            app.state.isDrawerOpen = false;
-            app.state.isUploadSheetOpen = false;
-            app.state.currentScreen = activeScreenId;
-            app.state.isNavigating = false;
-        }
-        return true;
-    }
-
     function loginSuccess() {
         document.getElementById('login-wrapper').style.display = 'none';
-        normalizeScreens('main-chat');
-        if (window.app) {
-            app.state.isAuthenticated = true;
-            app.renderSidebar();
-            app.updateMainView();
-        }
-        console.log('[DualSheng] login success -> main-chat ready');
+        document.getElementById('screen-main-chat').classList.add('active');
     }
 </script>
 <script data-purpose="app-logic">
     // --- Main App Logic ---
-    const apiClient = {
-        baseUrl: localStorage.getItem('dualsheng.api.baseUrl') || (
-            location.origin === 'https://appassets.androidplatform.net'
-                ? 'http://8.148.69.255'
-                : 'http://127.0.0.1:8000'
-        ),
-        tokens: JSON.parse(localStorage.getItem('dualsheng.tokens') || 'null'),
-
-        setBaseUrl(value) {
-            this.baseUrl = value.replace(/\/$/, '');
-            localStorage.setItem('dualsheng.api.baseUrl', this.baseUrl);
-        },
-
-        setTokens(tokens) {
-            this.tokens = tokens;
-            if (tokens) {
-                localStorage.setItem('dualsheng.tokens', JSON.stringify(tokens));
-            } else {
-                localStorage.removeItem('dualsheng.tokens');
-            }
-        },
-
-        async request(path, options = {}, retry = true) {
-            const headers = new Headers(options.headers || {});
-            if (!(options.body instanceof FormData) && !headers.has('Content-Type')) {
-                headers.set('Content-Type', 'application/json');
-            }
-            if (this.tokens?.access_token) {
-                headers.set('Authorization', `Bearer ${this.tokens.access_token}`);
-            }
-            const response = await fetch(`${this.baseUrl}${path}`, { ...options, headers });
-            if (response.status === 401 && retry && this.tokens?.refresh_token) {
-                const refreshed = await this.refreshToken().catch(() => null);
-                if (refreshed) return this.request(path, options, false);
-                this.setTokens(null);
-                throw new Error('登录已过期，请重新登录');
-            }
-            const contentType = response.headers.get('content-type') || '';
-            const body = contentType.includes('application/json') ? await response.json() : await response.text();
-            if (!response.ok) {
-                const message = body?.message || body?.detail || `请求失败 (${response.status})`;
-                throw new Error(message);
-            }
-            return body;
-        },
-
-        register(payload) { return this.request('/api/auth/register', { method: 'POST', body: JSON.stringify(payload) }); },
-        login(payload) { return this.request('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) }); },
-        refreshToken() {
-            return this.request('/api/auth/refresh', {
-                method: 'POST',
-                body: JSON.stringify({ refresh_token: this.tokens?.refresh_token })
-            }, false).then((tokens) => {
-                this.setTokens(tokens);
-                return tokens;
-            });
-        },
-        getMe() { return this.request('/api/users/me'); },
-        getUsage() { return this.request('/api/usage/me'); },
-        listTwins() { return this.request('/api/twins'); },
-        createTwin(payload) { return this.request('/api/twins', { method: 'POST', body: JSON.stringify(payload) }); },
-        listConversations() { return this.request('/api/conversations'); },
-        getConversation(id) { return this.request(`/api/conversations/${id}`); },
-        sendMessage(payload) { return this.request('/api/chat/message', { method: 'POST', body: JSON.stringify(payload) }); },
-        listFiles() { return this.request('/api/files'); },
-        listDocuments() { return this.request('/api/documents'); },
-        uploadFile(file) {
-            const form = new FormData();
-            form.append('upload', file);
-            return this.request('/api/files/upload', { method: 'POST', body: form, headers: {} });
-        },
-        parseDocument(fileId) { return this.request('/api/documents/parse', { method: 'POST', body: JSON.stringify({ file_id: fileId }) }); },
-        simulateTwin(id) { return this.request(`/api/twins/${id}/simulate`, { method: 'POST', body: JSON.stringify({}) }); },
-        getWeakPoints(id) { return this.request(`/api/twins/${id}/weak-points`); },
-        getBlackboard(id, topic) {
-            return this.request(`/api/twins/${id}/blackboard`, { method: 'POST', body: JSON.stringify({ topic }) });
-        }
-    };
-
-    const authActions = {
-        setError(id, message) {
-            const node = document.getElementById(id);
-            if (!node) return;
-            node.textContent = message || '';
-            node.classList.toggle('hidden', !message);
-        },
-
-        ensureTerms() {
-            if (!document.getElementById('terms')?.checked) {
-                throw new Error('请先阅读并同意用户协议与隐私政策');
-            }
-        },
-
-        async loginPassword() {
-            this.setError('auth-error-login', '');
-            try {
-                const account = document.getElementById('login-account').value.trim();
-                const password = document.getElementById('login-password').value;
-                if (!account || !password) throw new Error('请输入账号和密码');
-                const result = await apiClient.login({
-                    login_type: 'password',
-                    account,
-                    password,
-                    device: { platform: 'android-webview', app_version: '1.0.0' }
-                });
-                apiClient.setTokens(result.tokens);
-                await app.bootstrap(result.user);
-                loginSuccess();
-            } catch (error) {
-                this.setError('auth-error-login', error.message);
-            }
-        },
-
-        async register() {
-            this.setError('auth-error-register', '');
-            try {
-                this.ensureTerms();
-                const email = document.getElementById('register-account').value.trim();
-                const displayName = document.getElementById('register-display-name').value.trim();
-                const password = document.getElementById('reg-password').value;
-                if (!email || !password) throw new Error('请输入邮箱和密码');
-                const result = await apiClient.register({ email, password, display_name: displayName || null });
-                apiClient.setTokens(result.tokens);
-                await app.bootstrap(result.user);
-                loginSuccess();
-            } catch (error) {
-                this.setError('auth-error-register', error.message);
-            }
-        },
-
-        unsupported(message) {
-            this.setError('auth-error-login', message);
-            this.setError('auth-error-register', message);
-        }
-    };
-
     const appData = {
-        user: null,
-        usage: null,
-        twins: [],
-        conversations: [],
-        files: [],
-        documents: [],
-        weakPoints: [],
-        route: null,
-        blackboard: null
+        twins: [
+            {
+                id: 'twin-1',
+                name: '数学学习分身',
+                icon: 'functions',
+                color: 'blue',
+                conversations: [
+                    { id: 'conv-1', title: '拉普拉斯变换复习', time: '10:24' },
+                    { id: 'conv-2', title: '错题变式训练', time: '昨天' },
+                    { id: 'conv-3', title: '帮我总结今天的错题', time: '前天' }
+                ]
+            },
+            {
+                id: 'twin-2',
+                name: '英语口语分身',
+                icon: 'font_download',
+                color: 'green',
+                conversations: []
+            },
+            {
+                id: 'twin-3',
+                name: '考研复习分身',
+                icon: 'school',
+                color: 'purple',
+                conversations: [
+                    { id: 'conv-4', title: '政治大纲背诵', time: '上周' }
+                ]
+            }
+        ]
     };
+
+    window.addEventListener('popstate', (e) => {
+        const screen = e.state?.screen || 'main-chat';
+        app.navigateInternal(screen, { fromPopState: true });
+    });
 
     const app = {
         state: {
             currentScreen: 'main-chat',
-            aiMode: 'twin',
+            aiMode: 'twin', 
             isDrawerOpen: false,
             isUploadSheetOpen: false,
-            isNavigating: false,
-            isAuthenticated: false,
-            selectedTwinId: null,
-            selectedConversationId: null,
+            selectedTwinId: 'twin-1',
+            selectedConversationId: 'conv-1',
             isVoiceListening: false
         },
 
         init() {
-            this.bindUploadInput();
-            this.handleInput();
             this.renderSidebar();
             this.updateMainView();
-            if (apiClient.tokens?.access_token) {
-                this.bootstrap().then(() => loginSuccess()).catch(() => apiClient.setTokens(null));
-            }
+            this.handleInput(); 
+            this.bindFileInput();
         },
 
-        async bootstrap(user) {
-            appData.user = user || await apiClient.getMe();
-            const [twins, conversations, usage] = await Promise.all([
-                apiClient.listTwins(),
-                apiClient.listConversations(),
-                apiClient.getUsage()
-            ]);
-            appData.twins = twins;
-            appData.conversations = conversations;
-            appData.usage = usage;
-            this.state.selectedTwinId = twins[0]?.id || null;
-            this.state.selectedConversationId = conversations[0]?.id || null;
-            this.renderSidebar();
-            this.updateMainView();
+        bindFileInput() {
+            const input = document.getElementById('material-file-input');
+            if (!input) return;
+
+            input.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files || []);
+                if (!files.length) return;
+
+                const twin = appData.twins.find(t => t.id === this.state.selectedTwinId);
+                if (twin) {
+                    const newConvId = 'conv-' + Date.now();
+                    twin.conversations.unshift({
+                        id: newConvId,
+                        title: `上传了 ${files.length} 个文件`,
+                        time: '刚刚'
+                    });
+                    this.state.selectedConversationId = newConvId;
+                    this.renderSidebar();
+                    this.updateMainView();
+                }
+
+                input.value = '';
+            });
         },
 
-        iconForTwin(twin) {
-            if (!twin) return 'functions';
-            if (/英|口语|english/i.test(twin.subject || twin.name)) return 'font_download';
-            if (/考|学|school/i.test(twin.subject || twin.name)) return 'school';
-            return 'functions';
+        pickFiles(accept = '*/*') {
+            const input = document.getElementById('material-file-input');
+            if (!input) return;
+            input.accept = accept;
+            input.click();
         },
 
         renderSidebar() {
             const container = document.getElementById('sidebar-twins-list');
-            if (!container) return;
-            if (!appData.twins.length) {
-                container.innerHTML = `
-                    <div class="app-card p-4 text-center">
-                        <p class="text-sm text-on-surface-variant mb-3">还没有学习分身</p>
-                        <button class="px-4 py-2 rounded-full bg-brand-blue text-white" onclick="app.navigate('create-twin'); app.closeDrawer()">创建分身</button>
-                    </div>
-                `;
-                return;
-            }
-
             let html = '<div class="space-y-4">';
-            appData.twins.forEach((twin) => {
+
+            appData.twins.forEach(twin => {
                 const isActiveTwin = this.state.selectedTwinId === twin.id;
-                const icon = this.iconForTwin(twin);
+                
                 html += `
                 <div class="${isActiveTwin ? 'twin-item-active' : ''}">
                     <button class="w-full flex items-center justify-between p-3 focus:outline-none rounded-[16px] ${isActiveTwin ? 'bg-brand-surface' : 'hover:bg-brand-surface'}" onclick="app.selectTwin('${twin.id}')">
                         <div class="flex items-center gap-3">
-                            <div class="icon-box bg-blue-50 text-blue-500 shrink-0">
-                                <span class="material-symbols-rounded text-[20px]">${icon}</span>
+                            <div class="icon-box bg-${twin.color}-50 text-${twin.color}-500 shrink-0">
+                                <span class="material-symbols-rounded text-[20px]">${twin.icon}</span>
                             </div>
-                            <span class="font-semibold text-[15px] text-on-surface truncate">${this.escape(twin.name)}</span>
+                            <span class="font-semibold text-[15px] text-on-surface truncate">${twin.name}</span>
                         </div>
-                        <span class="material-symbols-rounded text-outline-variant text-[20px]">${isActiveTwin ? 'arrow_drop_down' : 'chevron_right'}</span>
+                        <span class="material-symbols-rounded text-outline-variant text-[20px] transition-transform duration-200 ${isActiveTwin ? 'rotate-90 text-brand-blue' : ''}">chevron_right</span>
                     </button>
                 `;
+
                 if (isActiveTwin) {
-                    html += `<div class="pl-14 pr-2 pb-2 pt-2 space-y-1 relative">`;
-                    appData.conversations.forEach((conv) => {
-                        const isConvActive = this.state.selectedConversationId === conv.id;
-                        html += `
+                    html += `<div class="pl-14 pr-2 pb-2 pt-2 space-y-1 relative before:absolute before:left-[35px] before:top-0 before:bottom-4 before:w-[2px] before:bg-outline-variant/10">`;
+                    
+                    if (twin.conversations.length > 0) {
+                        twin.conversations.forEach(conv => {
+                            const isConvActive = this.state.selectedConversationId === conv.id;
+                            html += `
                             <button class="w-full flex items-center justify-between p-2.5 rounded-[12px] text-left focus:outline-none hover:bg-brand-surface transition-colors-fast conv-item ${isConvActive ? 'conv-item-active' : ''}" onclick="app.selectConversation('${conv.id}')">
-                                <span class="text-[14px] truncate">${this.escape(conv.title)}</span>
+                                <div class="flex items-center gap-2 truncate">
+                                    <span class="text-[14px] truncate">${conv.title}</span>
+                                </div>
                             </button>
-                        `;
-                    });
+                            `;
+                        });
+                    }
+                    
                     html += `
                         <button class="w-full flex items-center gap-2 p-2.5 rounded-[12px] text-left text-on-surface-variant hover:text-brand-blue hover:bg-brand-surface transition-colors-fast focus:outline-none mt-1" onclick="app.selectConversation(null)">
                             <span class="material-symbols-rounded text-[18px]">add</span>
@@ -1875,110 +1748,135 @@
                         </button>
                     </div>`;
                 }
+                
                 html += `</div>`;
             });
-            container.innerHTML = html + '</div>';
-            window.DualShengHydrateIcons?.();
+
+            html += '</div>';
+            container.innerHTML = html;
         },
 
         selectTwin(twinId) {
+            if (this.state.selectedTwinId === twinId) return;
+            
             this.state.selectedTwinId = twinId;
+            const twin = appData.twins.find(t => t.id === twinId);
+            
+            if (twin && twin.conversations.length > 0) {
+                this.state.selectedConversationId = twin.conversations[0].id;
+            } else {
+                this.state.selectedConversationId = null;
+            }
+            
             this.renderSidebar();
             this.updateMainView();
             this.closeDrawer();
         },
 
-        async selectConversation(convId) {
+        selectConversation(convId) {
             this.state.selectedConversationId = convId;
             this.renderSidebar();
-            if (convId) {
-                const detail = await apiClient.getConversation(convId).catch(() => null);
-                const userMessage = this.lastMessageByRole(detail?.messages || [], 'user');
-                const assistantMessage = this.lastMessageByRole(detail?.messages || [], 'assistant');
-                this.setChatText(userMessage?.content || detail?.conversation?.title || '', assistantMessage?.content || '');
-            }
             this.updateMainView();
             this.closeDrawer();
         },
 
         updateMainView() {
-            const twin = appData.twins.find((item) => item.id === this.state.selectedTwinId);
-            const headerTitle = document.getElementById('main-header-title');
-            const emptyTitle = document.getElementById('empty-state-title');
-            const title = twin?.name || (appData.user ? `${appData.user.display_name || '你的'}学习分身` : '双生');
-            if (headerTitle) headerTitle.innerText = title;
-            if (emptyTitle) emptyTitle.innerText = title;
-
-            ['main-header-icon', 'empty-state-icon', 'chat-twin-icon'].forEach((id) => {
-                const node = document.getElementById(id);
-                if (node) node.innerText = this.iconForTwin(twin);
-            });
+            const twin = appData.twins.find(t => t.id === this.state.selectedTwinId);
+            if(twin) {
+                const headerTitle = document.getElementById('main-header-title');
+                const emptyTitle = document.getElementById('empty-state-title');
+                
+                if(headerTitle) headerTitle.innerText = twin.name;
+                if(emptyTitle) emptyTitle.innerText = twin.name;
+                
+                const headerIcon = document.getElementById('main-header-icon');
+                const emptyIcon = document.getElementById('empty-state-icon');
+                const chatIcon = document.getElementById('chat-twin-icon');
+                
+                if(headerIcon) headerIcon.innerText = twin.icon;
+                if(emptyIcon) emptyIcon.innerText = twin.icon;
+                if(chatIcon) chatIcon.innerText = twin.icon;
+                
+                const iconContainer = document.getElementById('empty-state-icon-container');
+                if(iconContainer) {
+                    const twinBgMap = {
+                        blue: 'bg-blue-500',
+                        green: 'bg-green-500',
+                        purple: 'bg-purple-500'
+                    };
+                    iconContainer.className = `w-24 h-24 rounded-[32px] flex items-center justify-center mb-6 relative shadow-lg ${twinBgMap[twin.color] || 'bg-brand-blue'}`;
+                }
+            }
 
             const emptyView = document.getElementById('main-empty-view');
             const chatView = document.getElementById('main-chat-view');
+
             if (this.state.selectedConversationId) {
-                emptyView?.classList.remove('active');
-                chatView?.classList.add('active');
-                const conv = appData.conversations.find((item) => item.id === this.state.selectedConversationId);
-                if (conv) this.setChatText(conv.title, '');
+                if(emptyView) emptyView.classList.remove('active');
+                if(chatView) chatView.classList.add('active');
+                
+                const conv = twin.conversations.find(c => c.id === this.state.selectedConversationId);
+                const userMsg = document.getElementById('chat-user-msg');
+                if(userMsg && conv) {
+                     userMsg.innerText = conv.title;
+                }
             } else {
-                emptyView?.classList.add('active');
-                chatView?.classList.remove('active');
+                if(emptyView) emptyView.classList.add('active');
+                if(chatView) chatView.classList.remove('active');
             }
-            window.DualShengHydrateIcons?.();
         },
-
-        setChatText(userText, assistantText) {
-            const userNode = document.getElementById('chat-user-msg');
-            if (userNode) userNode.innerText = userText || '新对话已准备好';
-            const assistantNode = document.querySelector('#main-chat-view .app-card p');
-            if (assistantNode && assistantText) assistantNode.innerText = assistantText;
-        },
-
+        
         handleInput() {
             const input = document.getElementById('chat-input');
             const btnVoice = document.getElementById('btn-voice');
             const btnSend = document.getElementById('btn-send');
-            if (!input || !btnVoice || !btnSend) return;
             const text = input.value.trim();
-            btnVoice.classList.toggle('hidden-state', text.length > 0);
-            btnVoice.classList.toggle('active-state', text.length === 0);
-            btnSend.classList.toggle('hidden-state', text.length === 0);
-            btnSend.classList.toggle('active-state', text.length > 0);
-            if (text && this.state.isVoiceListening) this.toggleVoice(false);
+            
+            if (text.length > 0) {
+                btnVoice.classList.replace('active-state', 'hidden-state');
+                btnSend.classList.replace('hidden-state', 'active-state');
+                if(this.state.isVoiceListening) this.toggleVoice(false);
+            } else {
+                btnSend.classList.replace('active-state', 'hidden-state');
+                btnVoice.classList.replace('hidden-state', 'active-state');
+            }
         },
 
         toggleVoice(forceState) {
             const btn = document.getElementById('btn-voice');
             this.state.isVoiceListening = forceState !== undefined ? forceState : !this.state.isVoiceListening;
-            btn?.classList.toggle('listening', this.state.isVoiceListening);
-            const input = document.getElementById('chat-input');
-            if (input) input.placeholder = this.state.isVoiceListening ? '正在听你说...' : '输入你的问题或学习需求...';
-        },
-
-        async sendMessage() {
-            const input = document.getElementById('chat-input');
-            const text = input?.value.trim();
-            if (!text) return;
-            input.value = '';
-            this.handleInput();
-            this.setChatText(text, '正在请求分身...');
-            normalizeScreens('main-chat');
-            try {
-                const result = await apiClient.sendMessage({
-                    message: text,
-                    conversation_id: this.state.selectedConversationId
-                });
-                this.state.selectedConversationId = result.conversation_id;
-                appData.conversations = await apiClient.listConversations();
-                this.setChatText(text, result.answer);
-                this.renderSidebar();
-                this.updateMainView();
-            } catch (error) {
-                this.setChatText(text, `发送失败：${error.message}`);
+            
+            if (this.state.isVoiceListening) {
+                btn.classList.add('listening');
+                document.getElementById('chat-input').placeholder = "正在听你说...";
+            } else {
+                btn.classList.remove('listening');
+                document.getElementById('chat-input').placeholder = "输入你的问题或学习需求...";
             }
         },
 
+        sendMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+            
+            input.value = '';
+            this.handleInput(); 
+            
+            const twin = appData.twins.find(t => t.id === this.state.selectedTwinId);
+            if(twin) {
+                const newConvId = 'conv-' + Date.now();
+                twin.conversations.unshift({
+                    id: newConvId,
+                    title: text,
+                    time: '刚刚'
+                });
+                this.state.selectedConversationId = newConvId;
+                this.renderSidebar();
+                this.updateMainView();
+            }
+        },
+        
         handleInputKeypress(e) {
             if (e.key === 'Enter' && !e.shiftKey) {
                 e.preventDefault();
@@ -1986,22 +1884,98 @@
             }
         },
 
-        async navigate(screenId) {
+        onBackPressed() {
+            if (this.state.isUploadSheetOpen) {
+                this.toggleUploadSheet(false);
+                return true;
+            }
+            if (this.state.isDrawerOpen) {
+                this.closeDrawer();
+                return true;
+            }
+            if (this.state.currentScreen !== 'main-chat' && this.state.currentScreen !== 'auth') {
+                this.navigate('main-chat');
+                return true;
+            }
+            return false;
+        },
+
+        pushScreen(screenId) {
+            if (this.state.currentScreen === screenId) return;
+            history.pushState({ screen: screenId }, '', `#${screenId}`);
+            this.navigateInternal(screenId);
+        },
+
+        navigateInternal(screenId, options = {}) {
+            if (this.isAnimating) return;
+            
+            const current = document.getElementById(`screen-${this.state.currentScreen}`);
             const next = document.getElementById(`screen-${screenId}`);
-            if (!next) return;
-            this.closeDrawer();
-            this.toggleUploadSheet(false);
-            normalizeScreens(screenId);
-            if (screenId === 'twin-library') await this.loadLibrary();
-            if (screenId === 'learning-route') await this.loadLearningRoute();
-            if (screenId === 'mistake-review') await this.loadWeakPoints();
-            if (screenId === 'blackboard') await this.loadBlackboard();
+            if(!next || current === next) return;
+            
+            this.isAnimating = true;
+            
+            requestAnimationFrame(() => {
+                let transitionFired = false;
+                const onTransitionEnd = (e) => {
+                    if (e && e.target !== next && e.target !== current) return;
+                    if (transitionFired) return;
+                    transitionFired = true;
+                    
+                    if (next) {
+                        next.removeEventListener('transitionend', onTransitionEnd);
+                        next.classList.remove('entering');
+                        next.classList.add('active');
+                    }
+                    if (current) {
+                        current.classList.remove('leaving', 'active');
+                    }
+                    this.state.currentScreen = screenId;
+                    this.isAnimating = false;
+                };
+
+                if (current) {
+                    current.classList.add('leaving');
+                    current.classList.remove('active', 'entering');
+                }
+                
+                if (next) {
+                    // For .view-screen (like main-chat), it doesn't have .entering in CSS, 
+                    // so we must add .active directly to trigger its fade-in transition.
+                    if (next.classList.contains('view-screen')) {
+                        next.classList.add('active');
+                    } else {
+                        next.classList.add('entering');
+                    }
+                    next.classList.remove('leaving');
+                    next.addEventListener('transitionend', onTransitionEnd);
+                }
+                
+                // Fallback in case transitionend never fires (e.g. no transition defined or invisible)
+                setTimeout(() => {
+                    if (!transitionFired) {
+                        onTransitionEnd(null);
+                    }
+                }, 350);
+            });
+        },
+
+        navigate(screenId) {
+            this.pushScreen(screenId);
         },
 
         toggleDrawer(force) {
             this.state.isDrawerOpen = force !== undefined ? force : !this.state.isDrawerOpen;
-            document.getElementById('drawer')?.classList.toggle('active', this.state.isDrawerOpen);
-            document.getElementById('drawer-overlay')?.classList.toggle('active', this.state.isDrawerOpen);
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('drawer-overlay');
+            
+            if (this.state.isDrawerOpen) {
+                drawer.classList.add('active');
+                overlay.classList.add('active');
+            } else {
+                drawer.classList.remove('active');
+                overlay.classList.remove('active');
+            }
         },
 
         closeDrawer() {
@@ -2010,193 +1984,42 @@
 
         toggleUploadSheet(force) {
             this.state.isUploadSheetOpen = force !== undefined ? force : !this.state.isUploadSheetOpen;
-            document.getElementById('upload-sheet')?.classList.toggle('active', this.state.isUploadSheetOpen);
-            document.getElementById('upload-overlay')?.classList.toggle('active', this.state.isUploadSheetOpen);
-        },
-
-        bindUploadInput() {
-            if (document.getElementById('material-file-input')) return;
-            const input = document.createElement('input');
-            input.id = 'material-file-input';
-            input.type = 'file';
-            input.accept = '.txt,.md,.pdf,.docx,.ppt,.pptx,.jpg,.jpeg,.png,.webp,.wav,.mp3,.m4a';
-            input.className = 'hidden';
-            input.addEventListener('change', () => {
-                const file = input.files?.[0];
-                if (file) this.uploadMaterial(file);
-                input.value = '';
-            });
-            document.body.appendChild(input);
-            document.querySelectorAll('button').forEach((button) => {
-                if ((button.textContent || '').includes('选择文件')) {
-                    button.addEventListener('click', () => input.click());
-                }
-            });
-        },
-
-        async uploadMaterial(file) {
-            this.renderUploadQueue(`正在上传 ${file.name}...`);
-            try {
-                const result = await apiClient.uploadFile(file);
-                this.renderUploadQueue(`${result.file.original_name} 已保存，状态：${result.document?.parse_status || result.file.status}`);
-                if (/\.(txt|md|docx)$/i.test(file.name)) {
-                    await apiClient.parseDocument(result.file.id).catch((error) => this.renderUploadQueue(`已上传，解析失败：${error.message}`));
-                }
-                await this.loadLibrary();
-            } catch (error) {
-                this.renderUploadQueue(`上传失败：${error.message}`);
-            }
-        },
-
-        renderUploadQueue(text) {
-            const queueTitle = [...document.querySelectorAll('#screen-upload-material h3')].find((node) => node.textContent.includes('上传队列'));
-            if (queueTitle) queueTitle.innerText = '上传队列';
-            const card = document.querySelector('#screen-upload-material .app-card');
-            if (card) card.innerHTML = `<div class="text-sm text-on-surface-variant">${this.escape(text)}</div>`;
-        },
-
-        async loadLibrary() {
-            try {
-                const [files, documents] = await Promise.all([apiClient.listFiles(), apiClient.listDocuments()]);
-                appData.files = files;
-                appData.documents = documents;
-                const list = document.querySelector('#screen-twin-library .space-y-3');
-                if (!list) return;
-                if (!files.length && !documents.length) {
-                    list.innerHTML = '<div class="app-card p-4 text-center text-sm text-on-surface-variant">资料库为空，请先上传资料。</div>';
-                    return;
-                }
-                list.innerHTML = documents.map((doc) => `
-                    <div class="app-card p-4 flex items-start gap-4">
-                        <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-500 flex items-center justify-center shrink-0">
-                            <span class="material-symbols-rounded">description</span>
-                        </div>
-                        <div class="flex-1">
-                            <h4 class="font-medium text-on-surface mb-1">${this.escape(doc.title || doc.original_name || '资料')}</h4>
-                            <p class="text-xs text-on-surface-variant mb-2">${this.escape(doc.parse_status || doc.status)} · ${this.formatSize(doc.size_bytes)}</p>
-                        </div>
-                    </div>
-                `).join('');
-                window.DualShengHydrateIcons?.();
-            } catch (error) {
-                this.renderUploadQueue(`资料库加载失败：${error.message}`);
-            }
-        },
-
-        async loadLearningRoute() {
-            const twinId = this.state.selectedTwinId;
-            const container = document.querySelector('#screen-learning-route .border-l-2');
-            if (!container || !twinId) return;
-            try {
-                const route = await apiClient.simulateTwin(twinId);
-                appData.route = route;
-                container.innerHTML = route.optimal_path.map((step, index) => `
-                    <div class="relative pl-8">
-                        <div class="absolute -left-[11px] top-1 w-5 h-5 rounded-full ${index === 0 ? 'bg-brand-blue' : 'bg-brand-surface'} border-4 border-brand-main-bg shadow-sm"></div>
-                        <div class="app-card p-4 ${index > 0 ? 'opacity-70' : ''}">
-                            <h3 class="font-semibold text-on-surface mb-1">${step.index}. ${this.escape(step.title)}</h3>
-                            <p class="text-sm text-on-surface-variant mb-3">${this.escape(step.teacher)} · ${this.escape(step.mode)} · ${this.escape(step.verification)}</p>
-                        </div>
-                    </div>
-                `).join('');
-            } catch (error) {
-                container.innerHTML = `<div class="app-card p-4 text-sm text-error">学习路线加载失败：${this.escape(error.message)}</div>`;
-            }
-        },
-
-        async loadWeakPoints() {
-            const twinId = this.state.selectedTwinId;
-            const list = document.querySelector('#screen-mistake-review .space-y-4');
-            if (!list || !twinId) return;
-            try {
-                appData.weakPoints = await apiClient.getWeakPoints(twinId);
-                list.innerHTML = appData.weakPoints.map((item) => `
-                    <div class="app-card p-4">
-                        <div class="flex justify-between items-center mb-2">
-                            <h4 class="font-semibold text-on-surface">${this.escape(item.topic)}</h4>
-                            <span class="text-xs text-brand-blue">${this.escape(item.severity)}</span>
-                        </div>
-                        <p class="text-sm text-on-surface-variant mb-2">${this.escape(item.evidence)}</p>
-                        <p class="text-sm text-brand-dark-blue">${this.escape(item.next_action)}</p>
-                    </div>
-                `).join('');
-            } catch (error) {
-                list.innerHTML = `<div class="app-card p-4 text-sm text-error">薄弱点加载失败：${this.escape(error.message)}</div>`;
-            }
-        },
-
-        async loadBlackboard() {
-            const twinId = this.state.selectedTwinId;
-            const board = document.getElementById('blackboard-card');
-            if (!board || !twinId) return;
-            try {
-                appData.blackboard = await apiClient.getBlackboard(twinId, null);
-                const step = appData.blackboard.steps[0];
-                board.innerHTML = `
-                    <div class="text-white/60 text-sm mb-4">步骤 ${step.index} / ${appData.blackboard.steps.length}</div>
-                    <div class="text-white/90 text-xl md:text-2xl font-mono mb-8 leading-relaxed">${this.escape(step.formula || step.title)}</div>
-                    <p class="text-white/70 text-sm md:text-base max-w-md">${this.escape(step.explanation)}</p>
-                `;
-            } catch (error) {
-                board.innerHTML = `<p class="text-white/70 text-sm">黑板加载失败：${this.escape(error.message)}</p>`;
-            }
-        },
-
-        async createTwinFromForm() {
-            const screen = document.getElementById('screen-create-twin');
-            const inputs = screen.querySelectorAll('input, textarea, select');
-            const name = inputs[0]?.value?.trim() || '我的学习分身';
-            const subject = inputs[1]?.value === '请选择方向' ? '综合学习' : inputs[1]?.value || '综合学习';
-            const goal = inputs[2]?.value?.trim() || '建立可持续同步的学习分身';
-            try {
-                const twin = await apiClient.createTwin({ name, subject, goal });
-                appData.twins.unshift(twin);
-                this.state.selectedTwinId = twin.id;
-                this.renderSidebar();
-                this.updateMainView();
-                this.navigate('main-chat');
-            } catch (error) {
-                alert(`创建失败：${error.message}`);
+            const sheet = document.getElementById('upload-sheet');
+            const overlay = document.getElementById('upload-overlay');
+            
+            if (this.state.isUploadSheetOpen) {
+                sheet.classList.add('active');
+                overlay.classList.add('active');
+            } else {
+                sheet.classList.remove('active');
+                overlay.classList.remove('active');
             }
         },
 
         setMode(mode) {
-            if (this.state.aiMode === mode) return;
+            if(this.state.aiMode === mode) return;
+            
             this.state.aiMode = mode;
             const switcher = document.getElementById('ai-mode-switcher');
-            if (!switcher) return;
             const btns = switcher.querySelectorAll('button');
+            
             switcher.classList.remove('mode-twin', 'mode-normal');
             switcher.classList.add(`mode-${mode}`);
-            btns[0]?.classList.toggle('text-brand-blue', mode === 'twin');
-            btns[1]?.classList.toggle('text-brand-blue', mode !== 'twin');
-        },
 
-        formatSize(bytes) {
-            if (!bytes) return '未知大小';
-            if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-            return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-        },
-
-        lastMessageByRole(messages, role) {
-            for (let index = messages.length - 1; index >= 0; index -= 1) {
-                if (messages[index].role === role) return messages[index];
+            if (mode === 'twin') {
+                btns[0].classList.replace('text-on-surface-variant', 'text-brand-blue');
+                btns[1].classList.replace('text-brand-blue', 'text-on-surface-variant');
+            } else {
+                btns[1].classList.replace('text-on-surface-variant', 'text-brand-blue');
+                btns[0].classList.replace('text-brand-blue', 'text-on-surface-variant');
             }
-            return null;
-        },
-
-        escape(value) {
-            return String(value ?? '').replace(/[&<>"']/g, (char) => ({
-                '&': '&amp;',
-                '<': '&lt;',
-                '>': '&gt;',
-                '"': '&quot;',
-                "'": '&#39;'
-            }[char]));
         }
     };
 
     document.addEventListener('DOMContentLoaded', () => app.init());
 </script>
 <!-- END: Scripts -->
+<input id="material-file-input" class="hidden" type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.txt,.md,image/*" multiple />
+<script src="./api-client.js"></script>
+<script src="./backend-bindings.js"></script>
 </body></html>

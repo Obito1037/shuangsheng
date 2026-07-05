@@ -35,3 +35,4 @@ Thumbs.db
 
 # migration temp
 _repo_migration_backup/
+tmp/
