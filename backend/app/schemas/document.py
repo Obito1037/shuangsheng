@@ -9,12 +9,14 @@ class DocumentParseRequest(BaseModel):
     file_id: str | None = None
     text: str | None = None
     title: str | None = None
+    twin_id: str | None = None
 
 
 class DocumentRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    twin_id: str | None = None
     file_id: str | None = None
     title: str
     status: str
@@ -32,6 +34,7 @@ class DocumentChunkRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
     id: str
+    twin_id: str | None = None
     document_id: str
     chunk_index: int
     source: str
